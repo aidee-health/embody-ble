@@ -41,12 +41,9 @@ jobs:
       - name: Add ssh agent for access to private repo embody codec
         uses: webfactory/ssh-agent@v0.5.4
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add ssh agent for access to private repo embody serial communicator
-        uses: webfactory/ssh-agent@v0.5.4
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_SERIAL_COMMUNICATOR }}
+          ssh-private-key: |
+            ${{ secrets.SSH_PRIVATE_KEY }}
+            ${{ secrets.SSH_PRIVATE_KEY_SERIAL_COMMUNICATOR }}
 
       - name: Upgrade pip
         run: |
