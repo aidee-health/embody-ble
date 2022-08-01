@@ -228,7 +228,7 @@ develop = false
 type = "git"
 url = "https://github.com/aidee-health/embody-protocol-codec.git"
 reference = "main"
-resolved_reference = "95d797420df44fe2c6936ef491d4adda1c4c4f9e"
+resolved_reference = "24b168d0a8c8f4584df07d52ce3a433b48b7cc21"
 
 [[package]]
 name = "filelock"
