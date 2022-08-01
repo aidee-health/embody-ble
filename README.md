@@ -17,6 +17,7 @@
 - Asynchronous send without having to wait for response
 - Synchronous send where response message is returned
 - Provides callback interfaces for incoming messages, response messages and connect/disconnect
+- Facade method to send/receive BLE messages directly
 - All methods and callbacks are threadsafe
 - Separate threads for send, receive and callback processing
 - Type safe code using [mypy](https://mypy.readthedocs.io/) for type checking
