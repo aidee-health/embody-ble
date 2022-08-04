@@ -243,7 +243,7 @@ pyserial = "^3.5"
 type = "git"
 url = "https://github.com/aidee-health/embody-serial-communicator.git"
 reference = "main"
-resolved_reference = "d5cff0c4372369feb78fcd40e5e06b30bf362825"
+resolved_reference = "fa122d9f76306402289d13717e44964715427edd"
 
 [[package]]
 name = "embodycodec"
@@ -1206,7 +1206,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.11"
-content-hash = "32249e7fead2f95b9e53c684072cc6ec754456f1aad87796c1a5d6e46eedd892"
+content-hash = "6978d84b0f62b62ae0f3f02a9630ec2878c7f0fb8e226848ba7afaea377d3c75"
 
 [metadata.files]
 alabaster = [

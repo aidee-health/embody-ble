@@ -59,6 +59,14 @@ logging.basicConfig(level=logging.DEBUG)
 
 Please see the [Command-line Reference] for more details.
 
+## Troubleshooting
+
+### I get a segmentation fault on Mac
+
+As of writing, you need to use the official Python release for Mac. Using brew's version does not work.
+For more, look at the [README](https://github.com/NordicSemiconductor/pc-ble-driver-py#macos-limitations)
+for Nordic's `pc-ble-driver-py`
+
 ## Contributing
 
 Contributions are very welcome.
