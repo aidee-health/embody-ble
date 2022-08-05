@@ -12,55 +12,66 @@ import serial.tools.list_ports
 from embodycodec import attributes
 from embodycodec import codec
 from embodyserial import communicator as serialcomm
-from pc_ble_driver_py import config
+from pc_ble_driver_py.observers import BLEAdapterObserver
+from pc_ble_driver_py.observers import BLEDriverObserver
 from serial.serialutil import SerialException
 
 from embodyble.exceptions import EmbodyBleError
 
 
-config.__conn_ic_id__ = "NRF52"
-
-from pc_ble_driver_py.ble_adapter import BLEAdapter
-from pc_ble_driver_py.ble_driver import BLEUUID
-from pc_ble_driver_py.ble_driver import BLEAdvData
-from pc_ble_driver_py.ble_driver import BLEConfig
-from pc_ble_driver_py.ble_driver import BLEConfigConnGap
-from pc_ble_driver_py.ble_driver import BLEConfigConnGatt
-from pc_ble_driver_py.ble_driver import BLEDriver
-from pc_ble_driver_py.ble_driver import BLEGapScanParams
-from pc_ble_driver_py.ble_driver import BLEUUIDBase
-from pc_ble_driver_py.observers import BLEAdapterObserver
-from pc_ble_driver_py.observers import BLEDriverObserver
-
-
-global nrf_sd_ble_api_ver
-nrf_sd_ble_api_ver = config.sd_api_ver_get()
-# Nordic UART Service
-NUS_BASE_UUID = BLEUUIDBase(
-    [
-        0x6E,
-        0x40,
-        0x00,
-        0x00,
-        0xB5,
-        0xA3,
-        0xF3,
-        0x93,
-        0xE0,
-        0xA9,
-        0xE5,
-        0x0E,
-        0x24,
-        0xDC,
-        0xCA,
-        0x9E,
-    ],
-    0x02,
-)
-NUS_RX_UUID = BLEUUID(0x0002, NUS_BASE_UUID)
-NUS_TX_UUID = BLEUUID(0x0003, NUS_BASE_UUID)
-
 CFG_TAG = 1
+
+
+def init():
+    """Global initialization of imports, due to the way pc-ble-driver-py handles conditional setup"""
+    # noinspection PyGlobalUndefined
+    global nrf_sd_ble_api_ver, config, BLEDriver, BLEAdvData, BLEEvtID, BLEAdapter, BLEEnableParams
+    global BLEGapTimeoutSrc, CTS_UUID, CTS_CURRENT_TIME, DIS_MANUFACTURER_NAME, DIS_MODEL_NUMBER
+    global DIS_SW_REVISION, DIS_SERIAL_NUMBER, BLEUUID, BLEConfigCommon, BLEConfig, BLEConfigConnGatt
+    global BLEGapScanParams, BLEGapConnParams, BLEConfigConnGap, NUS_BASE_UUID, NUS_RX_UUID, NUS_TX_UUID
+    from pc_ble_driver_py import config
+
+    config.__conn_ic_id__ = "NRF52"
+    # noinspection PyUnresolvedReferences
+    from pc_ble_driver_py.ble_adapter import BLEAdapter
+    from pc_ble_driver_py.ble_driver import BLEUUID
+    from pc_ble_driver_py.ble_driver import BLEAdvData
+    from pc_ble_driver_py.ble_driver import BLEConfig
+    from pc_ble_driver_py.ble_driver import BLEConfigCommon
+    from pc_ble_driver_py.ble_driver import BLEConfigConnGap
+    from pc_ble_driver_py.ble_driver import BLEConfigConnGatt
+    from pc_ble_driver_py.ble_driver import BLEDriver
+    from pc_ble_driver_py.ble_driver import BLEEnableParams
+    from pc_ble_driver_py.ble_driver import BLEEvtID
+    from pc_ble_driver_py.ble_driver import BLEGapConnParams
+    from pc_ble_driver_py.ble_driver import BLEGapScanParams
+    from pc_ble_driver_py.ble_driver import BLEGapTimeoutSrc
+    from pc_ble_driver_py.ble_driver import BLEUUIDBase
+
+    nrf_sd_ble_api_ver = config.sd_api_ver_get()
+    NUS_BASE_UUID = BLEUUIDBase(
+        [
+            0x6E,
+            0x40,
+            0x00,
+            0x00,
+            0xB5,
+            0xA3,
+            0xF3,
+            0x93,
+            0xE0,
+            0xA9,
+            0xE5,
+            0x0E,
+            0x24,
+            0xDC,
+            0xCA,
+            0x9E,
+        ],
+        0x02,
+    )
+    NUS_RX_UUID = BLEUUID(0x0002, NUS_BASE_UUID)
+    NUS_TX_UUID = BLEUUID(0x0003, NUS_BASE_UUID)
 
 
 class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
@@ -71,6 +82,7 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
 
     def __init__(self, ble_serial_port: str = None, device_name: str = None) -> None:
         super().__init__()
+        init()
         if ble_serial_port:
             self.__ble_serial_port = ble_serial_port
         else:
@@ -89,15 +101,24 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
         )
         self.__conn_q = Queue()
         self.__ble_conn_handle: int = None
-        self.__ble_adapter = BLEAdapter(ble_driver)
-        self.__ble_adapter.observer_register(self)
-        self.__ble_adapter.driver.observer_register(self)
-        self.__ble_adapter.default_mtu = 1500
-        self.__ble_adapter.interval = 7.5
-        logging.info("Opening ble driver")
+        self.__ble_adapter = self.__setup_ble_adapter(ble_driver)
+        self.__open_ble_driver()
+        self.__connect_and_discover()
+
+    def __setup_ble_adapter(self, ble_driver):
+        """Configure BLE Adapter"""
+        adapter = BLEAdapter(ble_driver)
+        adapter.observer_register(self)
+        adapter.driver.observer_register(self)
+        adapter.default_mtu = 1500
+        adapter.interval = 7.5
+        return adapter
+
+    def __open_ble_driver(self) -> None:
+        """Open and configure BLE Driver"""
         self.__ble_adapter.driver.open()
         gap_cfg = BLEConfigConnGap()
-        gap_cfg.conn_count = 1
+        gap_cfg.conn_count = 3
         gap_cfg.event_length = int(self.__ble_adapter.interval / 1.25)
         self.__ble_adapter.driver.ble_cfg_set(BLEConfig.conn_gap, gap_cfg)
         gatt_cfg = BLEConfigConnGatt(att_mtu=self.__ble_adapter.default_mtu)
@@ -105,7 +126,9 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
         self.__ble_adapter.driver.ble_cfg_set(BLEConfig.conn_gatt, gatt_cfg)
         self.__ble_adapter.driver.ble_enable()
         self.__ble_adapter.driver.ble_vs_uuid_add(NUS_BASE_UUID)
-        logging.info("Connect and discover device")
+
+    def __connect_and_discover(self) -> None:
+        logging.info("Discover and connect device")
         scan_duration = 5
         self.__ble_adapter.driver.ble_gap_scan_start(
             scan_params=BLEGapScanParams(
@@ -113,12 +136,32 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
             )
         )
         try:
+            logging.info(
+                "Waiting for connection through driver on_gap_evt_connected callback"
+            )
             self.__ble_conn_handle = self.__conn_q.get(timeout=scan_duration)
         except Empty as e:
             raise EmbodyBleError(
                 f"Unable to connect to {self.__device_name} within timeout ({scan_duration})"
             ) from e
         self.__ble_adapter.service_discovery(self.__ble_conn_handle)
+        # Configure parameters for optimized transfer rate
+        self.__ble_adapter.data_length_update(self.__ble_conn_handle, 251)
+        att_mtu = self.__ble_adapter.att_mtu_exchange(
+            self.__ble_conn_handle, self.__ble_adapter.default_mtu
+        )
+        logging.info(
+            f"Enabling longer Data Length {self.__ble_adapter.default_mtu} -> {att_mtu}"
+        )
+        logging.info("Enabling 2M PHYs")
+        req_phys = [0x02, 0x02]
+        self.__ble_adapter.phy_update(self.__ble_conn_handle, req_phys)
+        logging.info("Updating connection parameters")
+        conn_params = BLEGapConnParams(
+            self.__ble_adapter.interval, self.__ble_adapter.interval, 4000, 0
+        )
+        self.__ble_adapter.conn_param_update(self.__ble_conn_handle, conn_params)
+
         self.__ble_adapter.enable_notification(self.__ble_conn_handle, NUS_TX_UUID)
 
     def shutdown(self):
@@ -170,7 +213,6 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
         logging.info(f"New incoming data. Uuid (attribute): {uuid}")
         try:
             if uuid == NUS_TX_UUID:
-                self.signal_bas_battery_level.emit(data[0])
                 # Loop through the data and parse the BLE messages
                 pos = 0
                 while pos < len(data):
@@ -180,7 +222,7 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
             else:
                 logging.info(f"Unsubscribed uuid {uuid} - skipping")
         except Exception as e:
-            print(f"Receive error: {e}")
+            logging.warning(f"Receive error during incoming message: {e}")
 
     @staticmethod
     def __find_ble_serial_port() -> str:
@@ -194,7 +236,7 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
                 for description in descriptions:
                     if description in port.description:
                         return port.device
-        raise SerialException("No matching serial ports found")
+        raise EmbodyBleError("No matching serial ports found")
 
     @staticmethod
     def __find_name_from_serial_port() -> str:
@@ -203,10 +245,13 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
             msg=codec.GetAttribute(attributes.SerialNoAttribute.attribute_id), timeout=3
         )
         if not response or not isinstance(response, codec.GetAttributeResponse):
-            raise SerialException(
+            raise EmbodyBleError(
                 "Unable to find connected EmBody device on any serial port or no response received"
             )
-        device_name = "G3_" + hex(response.value.value)[-4:].upper()
+        device_name = (
+            "G3_"
+            + response.value.value.to_bytes(8, "big", signed=True).hex()[-4:].upper()
+        )
         return device_name
 
 
@@ -219,7 +264,7 @@ if __name__ == "__main__":
         format="%(asctime)s [%(thread)d/%(threadName)s] %(message)s",
     )
     logging.info("Setting up BLE communicator")
-    communicator = EmbodyBleCommunicator(device_name="G3_90F9")
+    communicator = EmbodyBleCommunicator(device_name=None)
     communicator.send_message(
         codec.GetAttribute(attributes.SerialNoAttribute.attribute_id)
     )
