@@ -29,8 +29,12 @@ from pc_ble_driver_py.ble_driver import BLEConfig
 from pc_ble_driver_py.ble_driver import BLEConfigConnGap
 from pc_ble_driver_py.ble_driver import BLEConfigConnGatt
 from pc_ble_driver_py.ble_driver import BLEDriver
+from pc_ble_driver_py.ble_driver import BLEGapAddr
+from pc_ble_driver_py.ble_driver import BLEGapAdvType
 from pc_ble_driver_py.ble_driver import BLEGapConnParams
+from pc_ble_driver_py.ble_driver import BLEGapRoles
 from pc_ble_driver_py.ble_driver import BLEGapScanParams
+from pc_ble_driver_py.ble_driver import BLEHci
 from pc_ble_driver_py.ble_driver import BLEUUIDBase
 
 
@@ -87,8 +91,8 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
             baud_rate=1000000,
             log_severity_level="debug",
         )
-        self.__conn_q = Queue()
-        self.__ble_conn_handle: int = None
+        self.__conn_q: Queue[int] = Queue()
+        self.__ble_conn_handle = -1
         self.__ble_adapter = self.__setup_ble_adapter(ble_driver)
         self.__open_ble_driver()
         self.__connect_and_discover()
@@ -152,7 +156,7 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
 
         self.__ble_adapter.enable_notification(self.__ble_conn_handle, NUS_TX_UUID)
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Shutdown after use."""
         self.__ble_adapter.driver.close()
 
@@ -161,23 +165,40 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
         logging.info(f"Sending message over BLE: {msg}")
         self.__ble_adapter.write_req(self.__ble_conn_handle, NUS_RX_UUID, data)
 
+    def __connected(self) -> bool:
+        """Check whether BLE is connected (active handle)"""
+        return self.__ble_conn_handle and self.__ble_conn_handle >= 0
+
     def on_gap_evt_connected(
-        self, ble_driver, conn_handle, peer_addr, role, conn_params
-    ):
+        self,
+        ble_driver: BLEDriver,
+        conn_handle: int,
+        peer_addr: BLEGapAddr,
+        role: BLEGapRoles,
+        conn_params: BLEGapConnParams,
+    ) -> None:
         """Implements BLEDriverObserver method"""
-        logging.info(f"Connected: handle #: {conn_handle}")
+        logging.info(f"Connected: handle #: {conn_handle}.")
         self.__conn_q.put(conn_handle)
 
-    def on_gap_evt_disconnected(self, ble_driver, conn_handle, reason):
+    def on_gap_evt_disconnected(
+        self, ble_driver: BLEDriver, conn_handle: int, reason: BLEHci
+    ) -> None:
         """Implements BLEDriverObserver method"""
         logging.info(f"Disconnected: {conn_handle} {reason}")
         self.__ble_conn_handle = None
 
     def on_gap_evt_adv_report(
-        self, ble_driver, conn_handle, peer_addr, rssi, adv_type, adv_data
-    ):
+        self,
+        ble_driver: BLEDriver,
+        conn_handle: int,
+        peer_addr: BLEGapAddr,
+        rssi: int,
+        adv_type: BLEGapAdvType,
+        adv_data: BLEAdvData,
+    ) -> None:
         """Implements BLEDriverObserver method. Used to find address for device name."""
-        if self.__ble_conn_handle:
+        if self.__connected():
             return
         if BLEAdvData.Types.complete_local_name in adv_data.records:
             dev_name_list = adv_data.records[BLEAdvData.Types.complete_local_name]
@@ -196,7 +217,9 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
             )
             self.__ble_adapter.connect(peer_addr, tag=CFG_TAG)
 
-    def on_notification(self, ble_adapter, conn_handle, uuid, data):
+    def on_notification(
+        self, ble_adapter: BLEAdapter, conn_handle: int, uuid: BLEUUID, data: list[int]
+    ) -> None:
         """Implements BLEAdapterObserver method"""
         logging.info(f"New incoming data. Uuid (attribute): {uuid}")
         try:
@@ -252,9 +275,10 @@ if __name__ == "__main__":
         format="%(asctime)s [%(thread)d/%(threadName)s] %(message)s",
     )
     logging.info("Setting up BLE communicator")
-    communicator = EmbodyBleCommunicator(device_name=None)
+    communicator = EmbodyBleCommunicator()
     communicator.send_message(
         codec.GetAttribute(attributes.SerialNoAttribute.attribute_id)
     )
     time.sleep(5)
     communicator.shutdown()
+    time.sleep(2)
