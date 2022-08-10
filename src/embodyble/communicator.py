@@ -455,7 +455,6 @@ class _MessageReader(BLEAdapterObserver):
 
 if __name__ == "__main__":
     """Main method for demo and testing"""
-    import time
 
     logging.basicConfig(
         level=logging.INFO,
@@ -467,6 +466,4 @@ if __name__ == "__main__":
         codec.GetAttribute(attributes.SerialNoAttribute.attribute_id)
     )
     logging.info(f"Received response: {response}")
-    time.sleep(5)
     communicator.shutdown()
-    time.sleep(2)
