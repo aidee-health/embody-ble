@@ -77,6 +77,11 @@ class EmbodyBleCommunicator(BLEDriverObserver):
     """Main class for setting up BLE communication with an EmBody device.
 
     If serial_port is not set, the first port identified with proper manufacturer name is used.
+
+    Handles both custom EmBody messages being sent on NUS_RX_UUID and received on NUS_TX_UUID,
+    as well as standard BLE messages sending/receiving. Different callback interfaces
+    (listeners) are used to be notified of incoming EmBody messages (MessageListener) and
+    incoming BLE messages (BleMessageListener).
     """
 
     def __init__(
@@ -84,6 +89,7 @@ class EmbodyBleCommunicator(BLEDriverObserver):
         ble_serial_port: str = None,
         device_name: str = None,
         msg_listener: MessageListener = None,
+        ble_msg_listener: BleMessageListener = None,
     ) -> None:
         super().__init__()
         if ble_serial_port:
@@ -115,6 +121,8 @@ class EmbodyBleCommunicator(BLEDriverObserver):
         self.__reader.add_response_message_listener(self.__sender)
         if msg_listener:
             self.__reader.add_message_listener(msg_listener)
+        if ble_msg_listener:
+            self.__reader.add_ble_message_listener(ble_msg_listener)
 
     def __setup_ble_adapter(self, ble_driver: BLEDriver) -> BLEAdapter:
         """Configure BLE Adapter."""
@@ -255,6 +263,7 @@ class EmbodyBleCommunicator(BLEDriverObserver):
 
     @staticmethod
     def __find_name_from_serial_port() -> str:
+        """Request serial no from EmBody device."""
         comm = serialcomm.EmbodySerialCommunicator()
         response = comm.send_message_and_wait_for_response(
             msg=codec.GetAttribute(attributes.SerialNoAttribute.attribute_id), timeout=3
