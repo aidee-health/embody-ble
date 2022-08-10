@@ -189,7 +189,7 @@ class EmbodyBleCommunicator(BLEDriverObserver):
 
     def __connected(self) -> bool:
         """Check whether BLE is connected (active handle)"""
-        return self.__ble_conn_handle and self.__ble_conn_handle >= 0
+        return self.__ble_conn_handle >= 0
 
     def on_gap_evt_connected(
         self,
@@ -208,7 +208,7 @@ class EmbodyBleCommunicator(BLEDriverObserver):
     ) -> None:
         """Implements BLEDriverObserver method"""
         logging.info(f"Disconnected: {conn_handle} {reason}")
-        self.__ble_conn_handle = None
+        self.__ble_conn_handle = -1
 
     def on_gap_evt_adv_report(
         self,
