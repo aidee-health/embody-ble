@@ -3,7 +3,10 @@
 Allows for both sending messages synchronously and asynchronously,
 receiving response messages and subscribing for incoming messages from the device.
 """
+import concurrent.futures
 import logging
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from queue import Empty
 from queue import Queue
 
@@ -18,6 +21,9 @@ from pc_ble_driver_py.observers import BLEDriverObserver
 from serial.serialutil import SerialException
 
 from embodyble.exceptions import EmbodyBleError
+from embodyble.listeners import BleMessageListener
+from embodyble.listeners import MessageListener
+from embodyble.listeners import ResponseMessageListener
 
 
 config.__conn_ic_id__ = "NRF52"
@@ -67,13 +73,18 @@ NUS_TX_UUID = BLEUUID(0x0003, NUS_BASE_UUID)
 CFG_TAG = 1
 
 
-class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
-    """Main class for setting up communication with an EmBody device.
+class EmbodyBleCommunicator(BLEDriverObserver):
+    """Main class for setting up BLE communication with an EmBody device.
 
     If serial_port is not set, the first port identified with proper manufacturer name is used.
     """
 
-    def __init__(self, ble_serial_port: str = None, device_name: str = None) -> None:
+    def __init__(
+        self,
+        ble_serial_port: str = None,
+        device_name: str = None,
+        msg_listener: MessageListener = None,
+    ) -> None:
         super().__init__()
         if ble_serial_port:
             self.__ble_serial_port = ble_serial_port
@@ -94,13 +105,20 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
         self.__conn_q: Queue[int] = Queue()
         self.__ble_conn_handle = -1
         self.__ble_adapter = self.__setup_ble_adapter(ble_driver)
+        self.__reader = _MessageReader()
+        self.__ble_adapter.observer_register(self.__reader)
         self.__open_ble_driver()
         self.__connect_and_discover()
+        self.__sender = _MessageSender(
+            ble_adapter=self.__ble_adapter, ble_conn_handle=self.__ble_conn_handle
+        )
+        self.__reader.add_response_message_listener(self.__sender)
+        if msg_listener:
+            self.__reader.add_message_listener(msg_listener)
 
     def __setup_ble_adapter(self, ble_driver: BLEDriver) -> BLEAdapter:
-        """Configure BLE Adapter"""
+        """Configure BLE Adapter."""
         adapter = BLEAdapter(ble_driver)
-        adapter.observer_register(self)
         adapter.driver.observer_register(self)
         adapter.default_mtu = 1500
         adapter.interval = 7.5
@@ -142,13 +160,13 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
         att_mtu = self.__ble_adapter.att_mtu_exchange(
             self.__ble_conn_handle, self.__ble_adapter.default_mtu
         )
-        logging.info(
+        logging.debug(
             f"Enabling longer Data Length {self.__ble_adapter.default_mtu} -> {att_mtu}"
         )
-        logging.info("Enabling 2M PHYs")
+        logging.debug("Enabling 2M PHYs")
         req_phys = [0x02, 0x02]
         self.__ble_adapter.phy_update(self.__ble_conn_handle, req_phys)
-        logging.info("Updating connection parameters")
+        logging.debug("Updating connection parameters")
         conn_params = BLEGapConnParams(
             self.__ble_adapter.interval, self.__ble_adapter.interval, 4000, 0
         )
@@ -159,11 +177,15 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
     def shutdown(self) -> None:
         """Shutdown after use."""
         self.__ble_adapter.driver.close()
+        self.__reader.stop()
 
     def send_message(self, msg: codec.Message) -> None:
-        data = msg.encode()
-        logging.info(f"Sending message over BLE: {msg}")
-        self.__ble_adapter.write_req(self.__ble_conn_handle, NUS_RX_UUID, data)
+        self.__sender.send_message(msg)
+
+    def send_message_and_wait_for_response(
+        self, msg: codec.Message, timeout: int = 30
+    ) -> codec.Message:
+        return self.__sender.send_message_and_wait_for_response(msg, timeout)
 
     def __connected(self) -> bool:
         """Check whether BLE is connected (active handle)"""
@@ -217,24 +239,6 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
             )
             self.__ble_adapter.connect(peer_addr, tag=CFG_TAG)
 
-    def on_notification(
-        self, ble_adapter: BLEAdapter, conn_handle: int, uuid: BLEUUID, data: list[int]
-    ) -> None:
-        """Implements BLEAdapterObserver method"""
-        logging.info(f"New incoming data. Uuid (attribute): {uuid}")
-        try:
-            if uuid == NUS_TX_UUID:
-                # Loop through the data and parse the BLE messages
-                pos = 0
-                while pos < len(data):
-                    msg = codec.decode(bytes(data[pos:]))
-                    logging.info(f"Decoded message: {msg}")
-                    pos += msg.length
-            else:
-                logging.info(f"Unsubscribed uuid {uuid} - skipping")
-        except Exception as e:
-            logging.warning(f"Receive error during incoming message: {e}")
-
     @staticmethod
     def __find_ble_serial_port() -> str:
         """Find first matching BLE serial port name with NRF dongle attached."""
@@ -266,6 +270,189 @@ class EmbodyBleCommunicator(BLEDriverObserver, BLEAdapterObserver):
         return device_name
 
 
+class _MessageSender(ResponseMessageListener):
+    """All send functionality is handled by this class.
+
+    This includes thread safety, async handling and windowing
+    """
+
+    def __init__(self, ble_adapter: BLEAdapter, ble_conn_handle: int) -> None:
+        self.__ble_adapter = ble_adapter
+        self.__ble_conn_handle = ble_conn_handle
+        self.__send_lock = threading.Lock()
+        self.__response_event = threading.Event()
+        self.__current_response_message: codec.Message = None
+        self.__send_executor = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="send-worker"
+        )
+
+    def shutdown(self) -> None:
+        self.__send_executor.shutdown(wait=False, cancel_futures=False)
+
+    def response_message_received(self, msg: codec.Message) -> None:
+        """Invoked when response message is received by Message reader.
+
+        Sets the local response message and notifies the waiting sender thread
+        """
+        logging.debug(f"Response message received: {msg}")
+        self.__current_response_message = msg
+        self.__response_event.set()
+
+    def send_message(self, msg: codec.Message) -> None:
+        self.__send_async(msg, False)
+
+    def send_message_and_wait_for_response(
+        self, msg: codec.Message, timeout: int = 30
+    ) -> codec.Message:
+        future = self.__send_async(msg, True)
+        try:
+            return future.result(timeout)
+        except TimeoutError:
+            logging.warning(
+                f"No response received for message within timeout: {msg}",
+                exc_info=False,
+            )
+            return None
+
+    def __send_async(
+        self, msg: codec.Message, wait_for_response: bool = True
+    ) -> concurrent.futures.Future[codec.Message]:
+        return self.__send_executor.submit(self.__do_send, msg, wait_for_response)
+
+    def __do_send(
+        self, msg: codec.Message, wait_for_response: bool = True
+    ) -> codec.Message:
+        with self.__send_lock:
+            logging.debug(f"Sending message: {msg}, encoded: {msg.encode().hex()}")
+            try:
+                self.__response_event.clear()
+                data = msg.encode()
+                logging.info(f"Sending message over BLE: {msg}")
+                self.__ble_adapter.write_req(self.__ble_conn_handle, NUS_RX_UUID, data)
+            except serial.SerialException as e:
+                logging.warning(f"Error sending message: {str(e)}", exc_info=False)
+                return None
+            if wait_for_response:
+                if self.__response_event.wait(30):
+                    return self.__current_response_message
+            return None
+
+
+class _MessageReader(BLEAdapterObserver):
+    """Process and dispatch incoming messages to subscribers/listeners."""
+
+    def __init__(self) -> None:
+        """Initialize MessageReader."""
+        super().__init__()
+        self.__message_listener_executor = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="rcv-worker"
+        )
+        self.__response_message_listener_executor = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="rsp-worker"
+        )
+        self.__message_listeners: list[MessageListener] = []
+        self.__ble_message_listeners: list[BleMessageListener] = []
+        self.__response_message_listeners: list[ResponseMessageListener] = []
+
+    def stop(self) -> None:
+        self.__message_listener_executor.shutdown(wait=False, cancel_futures=False)
+        self.__response_message_listener_executor.shutdown(
+            wait=False, cancel_futures=False
+        )
+
+    def on_notification(
+        self, ble_adapter: BLEAdapter, conn_handle: int, uuid: BLEUUID, data: list[int]
+    ) -> None:
+        """Implements BLEAdapterObserver method.
+
+        New messages, both custom codec messages and BLE messages are received here.
+        """
+        logging.debug(f"New incoming data. Uuid (attribute): {uuid}")
+        try:
+            if uuid == NUS_TX_UUID:
+                # Loop through the data and parse the BLE messages
+                pos = 0
+                while pos < len(data):
+                    msg = codec.decode(bytes(data[pos:]))
+                    logging.debug(f"Decoded message: {msg}")
+                    self.__handle_incoming_message(msg)
+                    pos += msg.length
+            else:
+                logging.debug(f"Received BLE message for uuid {uuid}")
+
+        except Exception as e:
+            logging.warning(f"Receive error during incoming message: {e}")
+
+    def __handle_incoming_message(self, msg: codec.Message) -> None:
+        if msg.msg_type < 0x80:
+            self.__handle_message(msg)
+        else:
+            self.__handle_response_message(msg)
+
+    def __handle_message(self, msg: codec.Message) -> None:
+        logging.debug(f"Handling new message: {msg}")
+        if len(self.__message_listeners) == 0:
+            return
+        for listener in self.__message_listeners:
+            self.__message_listener_executor.submit(
+                _MessageReader.__notify_message_listener, listener, msg
+            )
+
+    @staticmethod
+    def __notify_message_listener(
+        listener: MessageListener, msg: codec.Message
+    ) -> None:
+        try:
+            listener.message_received(msg)
+        except Exception as e:
+            logging.warning(f"Error notifying listener: {str(e)}", exc_info=True)
+
+    def add_message_listener(self, listener: MessageListener) -> None:
+        self.__message_listeners.append(listener)
+
+    def __handle_response_message(self, msg: codec.Message) -> None:
+        logging.debug(f"Handling new response message: {msg}")
+        if len(self.__response_message_listeners) == 0:
+            return
+        for listener in self.__response_message_listeners:
+            self.__response_message_listener_executor.submit(
+                _MessageReader.__notify_rsp_message_listener, listener, msg
+            )
+
+    @staticmethod
+    def __notify_rsp_message_listener(
+        listener: ResponseMessageListener, msg: codec.Message
+    ) -> None:
+        try:
+            listener.response_message_received(msg)
+        except Exception as e:
+            logging.warning(f"Error notifying listener: {str(e)}", exc_info=True)
+
+    def add_response_message_listener(self, listener: ResponseMessageListener) -> None:
+        self.__response_message_listeners.append(listener)
+
+    def __handle_ble_message(self, uuid: BLEUUID, data: list[int]) -> None:
+        logging.debug(f"Handling new BLE message. UUID: {uuid}")
+        if len(self.__ble_message_listeners) == 0:
+            return
+        for listener in self.__ble_message_listeners:
+            self.__ble_message_listener_executor.submit(
+                _MessageReader.__notify_ble_message_listener, listener, uuid, data
+            )
+
+    @staticmethod
+    def __notify_ble_message_listener(
+        listener: BleMessageListener, uuid: BLEUUID, data: list[int]
+    ) -> None:
+        try:
+            listener.ble_message_received(uuid, data)
+        except Exception as e:
+            logging.warning(f"Error notifying ble listener: {str(e)}", exc_info=True)
+
+    def add_ble_message_listener(self, listener: BleMessageListener) -> None:
+        self.__ble_message_listeners.append(listener)
+
+
 if __name__ == "__main__":
     """Main method for demo and testing"""
     import time
@@ -275,10 +462,11 @@ if __name__ == "__main__":
         format="%(asctime)s [%(thread)d/%(threadName)s] %(message)s",
     )
     logging.info("Setting up BLE communicator")
-    communicator = EmbodyBleCommunicator()
-    communicator.send_message(
+    communicator = EmbodyBleCommunicator(device_name="G3_CC03")
+    response = communicator.send_message_and_wait_for_response(
         codec.GetAttribute(attributes.SerialNoAttribute.attribute_id)
     )
+    logging.info(f"Received response: {response}")
     time.sleep(5)
     communicator.shutdown()
     time.sleep(2)
