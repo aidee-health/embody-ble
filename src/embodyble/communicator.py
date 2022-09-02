@@ -147,7 +147,7 @@ class EmbodyBleCommunicator(BLEDriverObserver):
 
     def __connect_and_discover(self) -> None:
         logging.info("Discover and connect device")
-        scan_duration = 5
+        scan_duration = 10
         self.__ble_adapter.driver.ble_gap_scan_start(
             scan_params=BLEGapScanParams(
                 interval_ms=200, window_ms=150, timeout_s=scan_duration
@@ -260,6 +260,15 @@ class EmbodyBleCommunicator(BLEDriverObserver):
                     if description in port.description:
                         return port.device
         raise EmbodyBleError("No matching serial ports found")
+
+    @staticmethod
+    def ble_serial_port_present() -> bool:
+        """Helper method to check if an nRF dongle is present."""
+        try:
+            port = EmbodyBleCommunicator.__find_ble_serial_port()
+            return port is not Empty
+        except EmbodyBleError:
+            return False
 
     @staticmethod
     def __find_name_from_serial_port() -> str:
@@ -470,7 +479,7 @@ if __name__ == "__main__":
         format="%(asctime)s [%(thread)d/%(threadName)s] %(message)s",
     )
     logging.info("Setting up BLE communicator")
-    communicator = EmbodyBleCommunicator(device_name="G3_CC03")
+    communicator = EmbodyBleCommunicator(device_name="G3_90F9")
     response = communicator.send_message_and_wait_for_response(
         codec.GetAttribute(attributes.SerialNoAttribute.attribute_id)
     )
