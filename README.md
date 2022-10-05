@@ -37,7 +37,7 @@ $ pip install "git+https://github.com/aidee-health/embody-ble-communicator@main#
 
 ## Usage
 
-A very basic example where you send a message request and get a response:
+A very basic example where you send a message request and get a response (resolving device serial no through serial port):
 
 ```python
 from embodyble import communicator
