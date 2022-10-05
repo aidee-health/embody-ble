@@ -24,7 +24,7 @@
 
 ## Requirements
 
-- Python 3.9 or newer
+- Python 3.9 (NOTE! Nordic's pc-ble-driver-py (and nrfutil) does not support 3.10 yet)
 - Access to private Aidee Health repositories on Github
 
 ## Installation
