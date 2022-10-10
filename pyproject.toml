@@ -19,7 +19,7 @@ classifiers = [
 Changelog = "https://github.com/aidee-health/embody-ble-communicator/releases"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.11"
+python = " >=3.9,<3.10"
 click = ">=8.0.1"
 embodycodec = {git = "https://github.com/aidee-health/embody-protocol-codec.git", rev = "main"}
 pyserial = "^3.5"
