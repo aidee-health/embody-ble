@@ -67,6 +67,8 @@ As of writing, you need to use the official Python release for Mac. Using brew's
 For more, look at the [README](https://github.com/NordicSemiconductor/pc-ble-driver-py#macos-limitations)
 for Nordic's `pc-ble-driver-py`
 
+If you're using a Mac M1 or M2 with an ARM processor, look at this thread for tips.
+
 ## Contributing
 
 Contributions are very welcome.
