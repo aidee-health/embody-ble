@@ -19,11 +19,10 @@ classifiers = [
 Changelog = "https://github.com/aidee-health/embody-ble-communicator/releases"
 
 [tool.poetry.dependencies]
-python = " >=3.9,<3.10"
+python = ">=3.9,<3.10"
 click = ">=8.0.1"
-embodycodec = {git = "https://github.com/aidee-health/embody-protocol-codec.git", rev = "main"}
 pyserial = "^3.5"
-embody-serial-communicator = {git = "https://github.com/aidee-health/embody-serial-communicator.git", rev = "main"}
+embody-serial-communicator = {git = "https://github.com/aidee-health/embody-serial-communicator.git", tag = "v1.0.2"}
 pc-ble-driver-py = ">=0.17.0"
 
 [tool.poetry.dev-dependencies]
