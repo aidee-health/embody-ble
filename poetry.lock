@@ -219,22 +219,22 @@ conda = ["pyyaml"]
 
 [[package]]
 name = "embody-protocol-codec"
-version = "1.0.2"
+version = "1.0.3"
 description = "Embody Protocol Codec"
 category = "main"
 optional = false
-python-versions = " >=3.9,<3.10"
+python-versions = ">=3.9,<3.10"
 develop = false
 
 [package.source]
 type = "git"
 url = "https://github.com/aidee-health/embody-protocol-codec.git"
-reference = "v1.0.2"
-resolved_reference = "085b0b3b1c05a18122ed672a96a59082d5611726"
+reference = "v1.0.3"
+resolved_reference = "1a98a893fb8d96aa55714155cbbbcbad44e3c70f"
 
 [[package]]
 name = "embody-serial-communicator"
-version = "1.0.2"
+version = "1.0.3"
 description = "Embody Serial Communicator"
 category = "main"
 optional = false
@@ -243,14 +243,14 @@ develop = false
 
 [package.dependencies]
 click = ">=8.0.1"
-embody-protocol-codec = {git = "https://github.com/aidee-health/embody-protocol-codec.git", tag = "v1.0.2"}
+embody-protocol-codec = {git = "https://github.com/aidee-health/embody-protocol-codec.git", tag = "v1.0.3"}
 pyserial = "^3.5"
 
 [package.source]
 type = "git"
 url = "https://github.com/aidee-health/embody-serial-communicator.git"
-reference = "v1.0.2"
-resolved_reference = "32f095bd851c5371fd64128f2d5258729c739195"
+reference = "v1.0.3"
+resolved_reference = "6f7a85261484487f05187eb3486fbec2b67dd559"
 
 [[package]]
 name = "filelock"
@@ -1204,7 +1204,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "flake8 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.10"
-content-hash = "8322facc773da54240677b3c5a5cb09a4a2f315c902335edca4b5827a5cbd55a"
+content-hash = "616b9785f2b1b680e5bde2b6a03d84440c073bb48a2fad1a0b5a3a64b5bf7e28"
 
 [metadata.files]
 alabaster = [

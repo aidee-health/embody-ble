@@ -385,7 +385,8 @@ class _MessageReader(BLEAdapterObserver):
 
         New messages, both custom codec messages and BLE messages are received here.
         """
-        logging.debug(f"New incoming data. Uuid (attribute): {uuid}")
+        hex_data = "".join(f"{x:02x}" for x in data)
+        logging.info(f"New incoming data. Uuid (attribute): {uuid}, data: {hex_data}")
         try:
             if uuid == NUS_TX_UUID:
                 # Loop through the data and parse the BLE messages
@@ -481,7 +482,7 @@ if __name__ == "__main__":
     logging.info("Setting up BLE communicator")
     communicator = EmbodyBleCommunicator(device_name="G3_90F9")
     response = communicator.send_message_and_wait_for_response(
-        codec.GetAttribute(attributes.SerialNoAttribute.attribute_id)
+        codec.GetAttribute(attributes.AfeSettingsAllAttribute.attribute_id)
     )
     logging.info(f"Received response: {response}")
     communicator.shutdown()
