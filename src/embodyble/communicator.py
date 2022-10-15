@@ -9,6 +9,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from queue import Empty
 from queue import Queue
+from typing import Optional
 
 import serial
 import serial.tools.list_ports
@@ -192,7 +193,7 @@ class EmbodyBleCommunicator(BLEDriverObserver):
 
     def send_message_and_wait_for_response(
         self, msg: codec.Message, timeout: int = 30
-    ) -> codec.Message:
+    ) -> Optional[codec.Message]:
         return self.__sender.send_message_and_wait_for_response(msg, timeout)
 
     def __connected(self) -> bool:
@@ -299,7 +300,7 @@ class _MessageSender(ResponseMessageListener):
         self.__ble_conn_handle = ble_conn_handle
         self.__send_lock = threading.Lock()
         self.__response_event = threading.Event()
-        self.__current_response_message: codec.Message = None
+        self.__current_response_message: Optional[codec.Message] = None
         self.__send_executor = ThreadPoolExecutor(
             max_workers=1, thread_name_prefix="send-worker"
         )
@@ -321,7 +322,7 @@ class _MessageSender(ResponseMessageListener):
 
     def send_message_and_wait_for_response(
         self, msg: codec.Message, timeout: int = 30
-    ) -> codec.Message:
+    ) -> Optional[codec.Message]:
         future = self.__send_async(msg, True)
         try:
             return future.result(timeout)
@@ -334,12 +335,12 @@ class _MessageSender(ResponseMessageListener):
 
     def __send_async(
         self, msg: codec.Message, wait_for_response: bool = True
-    ) -> concurrent.futures.Future[codec.Message]:
+    ) -> concurrent.futures.Future[Optional[codec.Message]]:
         return self.__send_executor.submit(self.__do_send, msg, wait_for_response)
 
     def __do_send(
         self, msg: codec.Message, wait_for_response: bool = True
-    ) -> codec.Message:
+    ) -> Optional[codec.Message]:
         with self.__send_lock:
             logging.debug(f"Sending message: {msg}, encoded: {msg.encode().hex()}")
             try:
