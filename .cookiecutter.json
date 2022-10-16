@@ -1,5 +1,5 @@
 {
-  "_output_dir": "/Users/espenwestgaard/workspaces/hypersension/embody-ble-communicator",
+  "_output_dir": "/Users/espenwestgaard/workspaces/hypersension/embody-ble",
   "_template": "gh:cjolowicz/cookiecutter-hypermodern-python",
   "author": "Aidee Health",
   "copyright_year": "2022",
@@ -9,6 +9,6 @@
   "github_user": "aidee-health",
   "license": "MIT",
   "package_name": "embodyble",
-  "project_name": "embody-ble-communicator",
+  "project_name": "embody-ble",
   "version": "0.1.0"
 }

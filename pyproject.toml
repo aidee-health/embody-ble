@@ -1,13 +1,13 @@
 [tool.poetry]
-name = "embody-ble-communicator"
+name = "embody-ble"
 version = "1.0.2"
 description = "Embody BLE Communicator"
 authors = ["Espen Westgaard <espen@aidee.io>"]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/aidee-health/embody-ble-communicator"
-repository = "https://github.com/aidee-health/embody-ble-communicator"
-documentation = "https://embody-ble-communicator.readthedocs.io"
+homepage = "https://github.com/aidee-health/embody-ble"
+repository = "https://github.com/aidee-health/embody-ble"
+documentation = "https://embody-ble.readthedocs.io"
 packages = [
     { include = "embodyble", from = "src" },
 ]
@@ -16,13 +16,13 @@ classifiers = [
 ]
 
 [tool.poetry.urls]
-Changelog = "https://github.com/aidee-health/embody-ble-communicator/releases"
+Changelog = "https://github.com/aidee-health/embody-ble/releases"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.10"
 click = ">=8.0.1"
 pyserial = "^3.5"
-embody-serial-communicator = {git = "https://github.com/aidee-health/embody-serial-communicator.git", tag = "v1.0.3"}
+embody-serial = {git = "https://github.com/aidee-health/embody-serial.git", tag = "v1.0.3"}
 pc-ble-driver-py = ">=0.17.0"
 
 [tool.poetry.dev-dependencies]
@@ -52,7 +52,7 @@ xdoctest = {extras = ["colors"], version = ">=0.15.10"}
 myst-parser = {version = ">=0.16.1"}
 
 [tool.poetry.scripts]
-embody-ble-communicator = "embodyble.__main__:main"
+embody-ble = "embodyble.__main__:main"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]

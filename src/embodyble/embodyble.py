@@ -74,7 +74,7 @@ NUS_TX_UUID = BLEUUID(0x0003, NUS_BASE_UUID)
 CFG_TAG = 1
 
 
-class EmbodyBleCommunicator(BLEDriverObserver):
+class EmbodyBle(BLEDriverObserver):
     """Main class for setting up BLE communication with an EmBody device.
 
     If serial_port is not set, the first port identified with proper manufacturer name is used.
@@ -266,7 +266,7 @@ class EmbodyBleCommunicator(BLEDriverObserver):
     def ble_serial_port_present() -> bool:
         """Helper method to check if an nRF dongle is present."""
         try:
-            port = EmbodyBleCommunicator.__find_ble_serial_port()
+            port = EmbodyBle.__find_ble_serial_port()
             return port is not Empty
         except EmbodyBleError:
             return False
@@ -481,7 +481,7 @@ if __name__ == "__main__":
         format="%(asctime)s [%(thread)d/%(threadName)s] %(message)s",
     )
     logging.info("Setting up BLE communicator")
-    communicator = EmbodyBleCommunicator(device_name="G3_90F9")
+    communicator = EmbodyBle(device_name="G3_90F9")
     response = communicator.send_message_and_wait_for_response(
         codec.GetAttribute(attributes.AfeSettingsAllAttribute.attribute_id)
     )

@@ -1,11 +1,11 @@
-# Embody BLE Communicator
+# Embody BLE
 
-[![Tests](https://github.com/aidee-health/embody-ble-communicator/workflows/Tests/badge.svg)][tests]
+[![Tests](https://github.com/aidee-health/embody-ble/workflows/Tests/badge.svg)][tests]
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
 
-[tests]: https://github.com/aidee-health/embody-ble-communicator/actions?workflow=Tests
+[tests]: https://github.com/aidee-health/embody-ble/actions?workflow=Tests
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [black]: https://github.com/psf/black
 
@@ -29,10 +29,10 @@
 
 ## Installation
 
-You can install _Embody BLE Communicator_ via [pip] from private Github repo:
+You can install _Embody BLE_ via [pip] from private Github repo:
 
 ```console
-$ pip install "git+https://github.com/aidee-health/embody-ble-communicator@main#egg=embodyble"
+$ pip install "git+https://github.com/aidee-health/embody-ble@main#egg=embodyble"
 ```
 
 ## Usage
@@ -40,10 +40,10 @@ $ pip install "git+https://github.com/aidee-health/embody-ble-communicator@main#
 A very basic example where you send a message request and get a response (resolving device serial no through serial port):
 
 ```python
-from embodyble import communicator
+from embodyble import embodyble
 from embodycodec import codec
 
-comm = communicator.EmbodyBleCommunicator()
+comm = embodyble.EmbodyBle()
 response = comm.send_message_and_wait_for_response(codec.ListFiles())
 print(f"Received response: {response}")
 comm.shutdown()
@@ -80,11 +80,11 @@ If you encounter any problems,
 please [file an issue] along with a detailed description.
 
 [hypermodern python cookiecutter]: https://github.com/cjolowicz/cookiecutter-hypermodern-python
-[file an issue]: https://github.com/aidee-health/embody-ble-communicator/issues
+[file an issue]: https://github.com/aidee-health/embody-ble/issues
 [pip]: https://pip.pypa.io/
 
 <!-- github-only -->
 
-[license]: https://github.com/aidee-health/embody-ble-communicator/blob/main/LICENSE
-[contributor guide]: https://github.com/aidee-health/embody-ble-communicator/blob/main/CONTRIBUTING.md
-[command-line reference]: https://embody-ble-communicator.readthedocs.io/en/latest/usage.html
+[license]: https://github.com/aidee-health/embody-ble/blob/main/LICENSE
+[contributor guide]: https://github.com/aidee-health/embody-ble/blob/main/CONTRIBUTING.md
+[command-line reference]: https://embody-ble.readthedocs.io/en/latest/usage.html
