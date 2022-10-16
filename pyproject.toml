@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "embody-ble"
-version = "1.0.2"
+version = "1.0.3"
 description = "Embody BLE Communicator"
 authors = ["Espen Westgaard <espen@aidee.io>"]
 license = "MIT"
