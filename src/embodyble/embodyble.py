@@ -15,7 +15,7 @@ import serial
 import serial.tools.list_ports
 from embodycodec import attributes
 from embodycodec import codec
-from embodyserial import communicator as serialcomm
+from embodyserial import embodyserial as serialcomm
 from pc_ble_driver_py import config
 from pc_ble_driver_py.observers import BLEAdapterObserver
 from pc_ble_driver_py.observers import BLEDriverObserver
@@ -74,7 +74,7 @@ NUS_TX_UUID = BLEUUID(0x0003, NUS_BASE_UUID)
 CFG_TAG = 1
 
 
-class EmbodyBleCommunicator(BLEDriverObserver):
+class EmbodyBle(BLEDriverObserver):
     """Main class for setting up BLE communication with an EmBody device.
 
     If serial_port is not set, the first port identified with proper manufacturer name is used.
@@ -266,7 +266,7 @@ class EmbodyBleCommunicator(BLEDriverObserver):
     def ble_serial_port_present() -> bool:
         """Helper method to check if an nRF dongle is present."""
         try:
-            port = EmbodyBleCommunicator.__find_ble_serial_port()
+            port = EmbodyBle.__find_ble_serial_port()
             return port is not Empty
         except EmbodyBleError:
             return False
@@ -274,8 +274,8 @@ class EmbodyBleCommunicator(BLEDriverObserver):
     @staticmethod
     def __find_name_from_serial_port() -> str:
         """Request serial no from EmBody device."""
-        comm = serialcomm.EmbodySerialCommunicator()
-        response = comm.send_message_and_wait_for_response(
+        comm = serialcomm.EmbodySerial()
+        response = comm.send(
             msg=codec.GetAttribute(attributes.SerialNoAttribute.attribute_id), timeout=3
         )
         if not response or not isinstance(response, codec.GetAttributeResponse):
@@ -481,7 +481,7 @@ if __name__ == "__main__":
         format="%(asctime)s [%(thread)d/%(threadName)s] %(message)s",
     )
     logging.info("Setting up BLE communicator")
-    communicator = EmbodyBleCommunicator(device_name="G3_90F9")
+    communicator = EmbodyBle(device_name="G3_90F9")
     response = communicator.send_message_and_wait_for_response(
         codec.GetAttribute(attributes.AfeSettingsAllAttribute.attribute_id)
     )

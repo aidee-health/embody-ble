@@ -12,9 +12,9 @@ Here is a list of important resources for contributors:
 - [Code of Conduct]
 
 [mit license]: https://opensource.org/licenses/MIT
-[source code]: https://github.com/aidee-health/embody-ble-communicator
-[documentation]: https://embody-ble-communicator.readthedocs.io/
-[issue tracker]: https://github.com/aidee-health/embody-ble-communicator/issues
+[source code]: https://github.com/aidee-health/embody-ble
+[documentation]: https://embody-ble.readthedocs.io/
+[issue tracker]: https://github.com/aidee-health/embody-ble/issues
 
 ## How to report a bug
 
@@ -54,7 +54,7 @@ or the command-line interface:
 
 ```console
 $ poetry run python
-$ poetry run embody-ble-communicator
+$ poetry run embody-ble
 ```
 
 [poetry]: https://python-poetry.org/
@@ -118,7 +118,7 @@ This will allow a chance to talk it over with the owners and validate your appro
 - [Hypermodern Cookiecutter GitHub](https://github.com/cjolowicz/cookiecutter-hypermodern-python)
 - [Threading Howto](https://superfastpython.com/threading-in-python/)
 
-[pull request]: https://github.com/aidee-health/embody-ble-communicator/pulls
+[pull request]: https://github.com/aidee-health/embody-ble/pulls
 
 <!-- github-only -->
 
