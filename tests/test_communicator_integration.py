@@ -19,6 +19,7 @@ def test_send_codec_message_and_wait_for_response() -> None:
     response = communicator.send_message_and_wait_for_response(
         codec.GetAttribute(attributes.SerialNoAttribute.attribute_id)
     )
+    assert response is not None
     assert response.msg_type == codec.GetAttributeResponse.msg_type
     assert isinstance(response, codec.GetAttributeResponse)
     communicator.shutdown()

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "embody-ble-communicator"
-version = "1.0.1"
+version = "1.0.2"
 description = "Embody BLE Communicator"
 authors = ["Espen Westgaard <espen@aidee.io>"]
 license = "MIT"
@@ -22,7 +22,7 @@ Changelog = "https://github.com/aidee-health/embody-ble-communicator/releases"
 python = ">=3.9,<3.10"
 click = ">=8.0.1"
 pyserial = "^3.5"
-embody-serial-communicator = {git = "https://github.com/aidee-health/embody-serial-communicator.git", tag = "v1.0.2"}
+embody-serial-communicator = {git = "https://github.com/aidee-health/embody-serial-communicator.git", tag = "v1.0.3"}
 pc-ble-driver-py = ">=0.17.0"
 
 [tool.poetry.dev-dependencies]
