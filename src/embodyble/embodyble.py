@@ -15,7 +15,7 @@ import serial
 import serial.tools.list_ports
 from embodycodec import attributes
 from embodycodec import codec
-from embodyserial import communicator as serialcomm
+from embodyserial import embodyserial as serialcomm
 from pc_ble_driver_py import config
 from pc_ble_driver_py.observers import BLEAdapterObserver
 from pc_ble_driver_py.observers import BLEDriverObserver
@@ -274,8 +274,8 @@ class EmbodyBle(BLEDriverObserver):
     @staticmethod
     def __find_name_from_serial_port() -> str:
         """Request serial no from EmBody device."""
-        comm = serialcomm.EmbodySerialCommunicator()
-        response = comm.send_message_and_wait_for_response(
+        comm = serialcomm.EmbodySerial()
+        response = comm.send(
             msg=codec.GetAttribute(attributes.SerialNoAttribute.attribute_id), timeout=3
         )
         if not response or not isinstance(response, codec.GetAttributeResponse):
