@@ -233,8 +233,8 @@ reference = "v1.0.3"
 resolved_reference = "1a98a893fb8d96aa55714155cbbbcbad44e3c70f"
 
 [[package]]
-name = "embody-serial-communicator"
-version = "1.0.3"
+name = "embody-serial"
+version = "1.0.4"
 description = "Embody Serial Communicator"
 category = "main"
 optional = false
@@ -249,8 +249,8 @@ pyserial = "^3.5"
 [package.source]
 type = "git"
 url = "https://github.com/aidee-health/embody-serial.git"
-reference = "v1.0.3"
-resolved_reference = "6f7a85261484487f05187eb3486fbec2b67dd559"
+reference = "v1.0.4"
+resolved_reference = "512106e7d40ba1a464c4b6a3b196bde33f7ca171"
 
 [[package]]
 name = "filelock"
@@ -1204,7 +1204,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "flake8 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.10"
-content-hash = "a6e2c2a6241d9b8bff1bb09067d5657c9c72d1d4564040d0b352d05399fd0bfd"
+content-hash = "4c3533ec058e78494efe748f755852f5b3e2f91b6838e11c1ad7c558ba8d2143"
 
 [metadata.files]
 alabaster = [
@@ -1433,7 +1433,7 @@ dparse = [
     {file = "dparse-0.6.2.tar.gz", hash = "sha256:d45255bda21f998bc7ddf2afd5e62505ba6134756ba2d42a84c56b0826614dfe"},
 ]
 embody-protocol-codec = []
-embody-serial-communicator = []
+embody-serial = []
 filelock = [
     {file = "filelock-3.8.0-py3-none-any.whl", hash = "sha256:617eb4e5eedc82fc5f47b6d61e4d11cb837c56cb4544e39081099fa17ad109d4"},
     {file = "filelock-3.8.0.tar.gz", hash = "sha256:55447caa666f2198c5b6b13a26d2084d26fa5b115c00d065664b2124680c4edc"},
