@@ -15,7 +15,7 @@ import serial
 import serial.tools.list_ports
 from embodycodec import attributes
 from embodycodec import codec
-from embodyserial import embodyserial as serialcomm
+from embodyserial import embodyserial
 from pc_ble_driver_py import config
 from pc_ble_driver_py.observers import BLEAdapterObserver
 from pc_ble_driver_py.observers import BLEDriverObserver
@@ -74,7 +74,7 @@ NUS_TX_UUID = BLEUUID(0x0003, NUS_BASE_UUID)
 CFG_TAG = 1
 
 
-class EmbodyBle(BLEDriverObserver):
+class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
     """Main class for setting up BLE communication with an EmBody device.
 
     If serial_port is not set, the first port identified with proper manufacturer name is used.
@@ -188,12 +188,10 @@ class EmbodyBle(BLEDriverObserver):
         self.__ble_adapter.driver.close()
         self.__reader.stop()
 
-    def send_message(self, msg: codec.Message) -> None:
+    def send_async(self, msg: codec.Message) -> None:
         self.__sender.send_message(msg)
 
-    def send_message_and_wait_for_response(
-        self, msg: codec.Message, timeout: int = 30
-    ) -> Optional[codec.Message]:
+    def send(self, msg: codec.Message, timeout: int = 30) -> Optional[codec.Message]:
         return self.__sender.send_message_and_wait_for_response(msg, timeout)
 
     def __connected(self) -> bool:
@@ -274,7 +272,7 @@ class EmbodyBle(BLEDriverObserver):
     @staticmethod
     def __find_name_from_serial_port() -> str:
         """Request serial no from EmBody device."""
-        comm = serialcomm.EmbodySerial()
+        comm = embodyserial.EmbodySerial()
         response = comm.send(
             msg=codec.GetAttribute(attributes.SerialNoAttribute.attribute_id), timeout=3
         )
