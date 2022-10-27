@@ -268,7 +268,7 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
         try:
             port = EmbodyBle.__find_ble_serial_port()
             return port is not Empty
-        except EmbodyBleError:
+        except Exception:
             return False
 
     @staticmethod
