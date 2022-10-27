@@ -21,10 +21,10 @@ from pc_ble_driver_py.observers import BLEAdapterObserver
 from pc_ble_driver_py.observers import BLEDriverObserver
 from serial.serialutil import SerialException
 
-from embodyble.exceptions import EmbodyBleError
-from embodyble.listeners import BleMessageListener
-from embodyble.listeners import MessageListener
-from embodyble.listeners import ResponseMessageListener
+from .exceptions import EmbodyBleError
+from .listeners import BleMessageListener
+from .listeners import MessageListener
+from .listeners import ResponseMessageListener
 
 
 config.__conn_ic_id__ = "NRF52"
@@ -276,7 +276,7 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
         """Request serial no from EmBody device."""
         comm = embodyserial.EmbodySerial()
         response = comm.send(
-            msg=codec.GetAttribute(attributes.SerialNoAttribute.attribute_id), timeout=3
+            msg=codec.GetAttribute(attributes.SerialNoAttribute.attribute_id), timeout=5
         )
         if not response or not isinstance(response, codec.GetAttributeResponse):
             raise EmbodyBleError(
