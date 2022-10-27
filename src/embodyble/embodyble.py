@@ -191,7 +191,9 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
     def send_async(self, msg: codec.Message) -> None:
         self.__sender.send_message(msg)
 
-    def send(self, msg: codec.Message, timeout: int = 30) -> Optional[codec.Message]:
+    def send(
+        self, msg: codec.Message, timeout: Optional[int] = 30
+    ) -> Optional[codec.Message]:
         return self.__sender.send_message_and_wait_for_response(msg, timeout)
 
     def __connected(self) -> bool:
