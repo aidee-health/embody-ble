@@ -321,7 +321,7 @@ class _MessageSender(ResponseMessageListener):
         self.__send_async(msg, False)
 
     def send_message_and_wait_for_response(
-        self, msg: codec.Message, timeout: int = 30
+        self, msg: codec.Message, timeout: Optional[int] = 30
     ) -> Optional[codec.Message]:
         future = self.__send_async(msg, True)
         try:
