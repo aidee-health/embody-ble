@@ -129,7 +129,7 @@ unicode_backport = ["unicodedata2"]
 name = "click"
 version = "8.1.3"
 description = "Composable command line interface toolkit"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -140,7 +140,7 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
-category = "main"
+category = "dev"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 
@@ -219,7 +219,7 @@ conda = ["pyyaml"]
 
 [[package]]
 name = "embody-protocol-codec"
-version = "1.0.3"
+version = "1.0.4"
 description = "Embody Protocol Codec"
 category = "main"
 optional = false
@@ -229,12 +229,12 @@ develop = false
 [package.source]
 type = "git"
 url = "https://github.com/aidee-health/embody-protocol-codec.git"
-reference = "v1.0.3"
-resolved_reference = "1a98a893fb8d96aa55714155cbbbcbad44e3c70f"
+reference = "v1.0.4"
+resolved_reference = "52c82b70b10a0fe60df2ff6abf305141ca07262f"
 
 [[package]]
 name = "embody-serial"
-version = "1.0.4"
+version = "1.0.5"
 description = "Embody Serial Communicator"
 category = "main"
 optional = false
@@ -242,15 +242,14 @@ python-versions = ">=3.9,<3.10"
 develop = false
 
 [package.dependencies]
-click = ">=8.0.1"
-embody-protocol-codec = {git = "https://github.com/aidee-health/embody-protocol-codec.git", tag = "v1.0.3"}
+embody-protocol-codec = {git = "https://github.com/aidee-health/embody-protocol-codec.git", tag = "v1.0.4"}
 pyserial = "^3.5"
 
 [package.source]
 type = "git"
 url = "https://github.com/aidee-health/embody-serial.git"
-reference = "v1.0.4"
-resolved_reference = "512106e7d40ba1a464c4b6a3b196bde33f7ca171"
+reference = "v1.0.5"
+resolved_reference = "969b7368f047b96b6edf9aec1e10ddc1f940df49"
 
 [[package]]
 name = "exceptiongroup"
@@ -1207,7 +1206,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "flake8 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.10"
-content-hash = "4c3533ec058e78494efe748f755852f5b3e2f91b6838e11c1ad7c558ba8d2143"
+content-hash = "687f0c46af3d4528565ee3ee73c826a79903e5c21f536ca6a10f852b4ce18ac0"
 
 [metadata.files]
 alabaster = [
