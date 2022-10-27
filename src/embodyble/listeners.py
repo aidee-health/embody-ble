@@ -3,10 +3,6 @@
 from abc import ABC
 from abc import abstractmethod
 
-from pc_ble_driver_py import config
-
-
-config.__conn_ic_id__ = "NRF52"
 from embodycodec import codec
 from pc_ble_driver_py.ble_driver import BLEUUID
 
