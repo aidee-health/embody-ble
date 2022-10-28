@@ -16,19 +16,6 @@ import serial.tools.list_ports
 from embodycodec import attributes
 from embodycodec import codec
 from embodyserial import embodyserial
-from pc_ble_driver_py import config
-from pc_ble_driver_py.observers import BLEAdapterObserver
-from pc_ble_driver_py.observers import BLEDriverObserver
-from serial.serialutil import SerialException
-
-from embodyble.exceptions import EmbodyBleError
-from embodyble.listeners import BleMessageListener
-from embodyble.listeners import MessageListener
-from embodyble.listeners import ResponseMessageListener
-
-
-config.__conn_ic_id__ = "NRF52"
-
 from pc_ble_driver_py.ble_adapter import BLEAdapter
 from pc_ble_driver_py.ble_driver import BLEUUID
 from pc_ble_driver_py.ble_driver import BLEAdvData
@@ -43,10 +30,16 @@ from pc_ble_driver_py.ble_driver import BLEGapRoles
 from pc_ble_driver_py.ble_driver import BLEGapScanParams
 from pc_ble_driver_py.ble_driver import BLEHci
 from pc_ble_driver_py.ble_driver import BLEUUIDBase
+from pc_ble_driver_py.observers import BLEAdapterObserver
+from pc_ble_driver_py.observers import BLEDriverObserver
+from serial.serialutil import SerialException
+
+from .exceptions import EmbodyBleError
+from .listeners import BleMessageListener
+from .listeners import MessageListener
+from .listeners import ResponseMessageListener
 
 
-global nrf_sd_ble_api_ver
-nrf_sd_ble_api_ver = config.sd_api_ver_get()
 NUS_BASE_UUID = BLEUUIDBase(
     [
         0x6E,
@@ -147,7 +140,7 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
         self.__ble_adapter.driver.ble_vs_uuid_add(NUS_BASE_UUID)
 
     def __connect_and_discover(self) -> None:
-        logging.info("Discover and connect device")
+        logging.debug("Discover and connect device")
         scan_duration = 10
         self.__ble_adapter.driver.ble_gap_scan_start(
             scan_params=BLEGapScanParams(
@@ -191,7 +184,9 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
     def send_async(self, msg: codec.Message) -> None:
         self.__sender.send_message(msg)
 
-    def send(self, msg: codec.Message, timeout: int = 30) -> Optional[codec.Message]:
+    def send(
+        self, msg: codec.Message, timeout: Optional[int] = 30
+    ) -> Optional[codec.Message]:
         return self.__sender.send_message_and_wait_for_response(msg, timeout)
 
     def __connected(self) -> bool:
@@ -207,14 +202,14 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
         conn_params: BLEGapConnParams,
     ) -> None:
         """Implements BLEDriverObserver method"""
-        logging.info(f"Connected: handle #: {conn_handle}.")
+        logging.debug(f"Connected: handle #: {conn_handle}.")
         self.__conn_q.put(conn_handle)
 
     def on_gap_evt_disconnected(
         self, ble_driver: BLEDriver, conn_handle: int, reason: BLEHci
     ) -> None:
         """Implements BLEDriverObserver method"""
-        logging.info(f"Disconnected: {conn_handle} {reason}")
+        logging.debug(f"Disconnected: {conn_handle} {reason}")
         self.__ble_conn_handle = -1
 
     def on_gap_evt_adv_report(
@@ -241,7 +236,7 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
             f"Received advertisement report, address: 0x{address_string}, device_name: {dev_name}"
         )
         if dev_name == self.__device_name:
-            logging.info(
+            logging.debug(
                 f"Received advertisement report from our device ({dev_name}). Connecting..."
             )
             self.__ble_adapter.connect(peer_addr, tag=CFG_TAG)
@@ -266,7 +261,7 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
         try:
             port = EmbodyBle.__find_ble_serial_port()
             return port is not Empty
-        except EmbodyBleError:
+        except Exception:
             return False
 
     @staticmethod
@@ -274,7 +269,7 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
         """Request serial no from EmBody device."""
         comm = embodyserial.EmbodySerial()
         response = comm.send(
-            msg=codec.GetAttribute(attributes.SerialNoAttribute.attribute_id), timeout=3
+            msg=codec.GetAttribute(attributes.SerialNoAttribute.attribute_id), timeout=5
         )
         if not response or not isinstance(response, codec.GetAttributeResponse):
             raise EmbodyBleError(
@@ -319,7 +314,7 @@ class _MessageSender(ResponseMessageListener):
         self.__send_async(msg, False)
 
     def send_message_and_wait_for_response(
-        self, msg: codec.Message, timeout: int = 30
+        self, msg: codec.Message, timeout: Optional[int] = 30
     ) -> Optional[codec.Message]:
         future = self.__send_async(msg, True)
         try:
@@ -344,7 +339,7 @@ class _MessageSender(ResponseMessageListener):
             try:
                 self.__response_event.clear()
                 data = msg.encode()
-                logging.info(f"Sending message over BLE: {msg}")
+                logging.debug(f"Sending message over BLE: {msg}")
                 self.__ble_adapter.write_req(self.__ble_conn_handle, NUS_RX_UUID, data)
             except serial.SerialException as e:
                 logging.warning(f"Error sending message: {str(e)}", exc_info=False)
@@ -385,7 +380,7 @@ class _MessageReader(BLEAdapterObserver):
         New messages, both custom codec messages and BLE messages are received here.
         """
         hex_data = "".join(f"{x:02x}" for x in data)
-        logging.info(f"New incoming data. Uuid (attribute): {uuid}, data: {hex_data}")
+        logging.debug(f"New incoming data. Uuid (attribute): {uuid}, data: {hex_data}")
         try:
             if uuid == NUS_TX_UUID:
                 # Loop through the data and parse the BLE messages
