@@ -32,7 +32,15 @@
 You can install _Embody BLE_ via [pip] from private Github repo:
 
 ```console
-$ pip install "git+https://github.com/aidee-health/embody-ble@main#egg=embodyble"
+$ pip install --upgrade --force-reinstall "git+https://github.com/aidee-health/embody-ble@v1.0.4#egg=embodyble"
+```
+
+(the `--upgrade` and `--force-reinstall` flags are not strictly necessary).
+
+If you have the repository cloned locally, you can simply do:
+
+```
+pip install -e /path/to/repository
 ```
 
 ## Usage
