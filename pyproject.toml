@@ -1,27 +1,26 @@
 [tool.poetry]
 name = "embody-ble"
 version = "1.0.6"
-description = "Embody BLE Communicator"
-authors = ["Espen Westgaard <espen@aidee.io>"]
+description = "Communicate with the EmBody device over BLE (bluetooth)"
+authors = ["Aidee Health AS <hello@aidee.io>"]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/aidee-health/embody-ble"
 repository = "https://github.com/aidee-health/embody-ble"
-documentation = "https://embody-ble.readthedocs.io"
+documentation = "https://github.com/aidee-health/embody-ble"
 packages = [
     { include = "embodyble", from = "src" },
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
 ]
-
 [tool.poetry.urls]
 Changelog = "https://github.com/aidee-health/embody-ble/releases"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.10"
 pyserial = "^3.5"
-embody-serial = {git = "https://github.com/aidee-health/embody-serial.git", tag = "v1.0.5"}
+embody-serial = ">=1.0.7"
 pc-ble-driver-py = ">=0.17.0"
 
 [tool.poetry.dev-dependencies]

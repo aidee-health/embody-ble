@@ -1,10 +1,18 @@
 # Embody BLE
 
+[![PyPI](https://img.shields.io/pypi/v/embody-ble.svg)][pypi_]
+[![Status](https://img.shields.io/pypi/status/embody-ble.svg)][status]
+[![Python Version](https://img.shields.io/pypi/pyversions/embody-ble)][python version]
+[![License](https://img.shields.io/pypi/l/embody-ble)][license]
+
 [![Tests](https://github.com/aidee-health/embody-ble/workflows/Tests/badge.svg)][tests]
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
 
+[pypi_]: https://pypi.org/project/embody-ble/
+[status]: https://pypi.org/project/embody-ble/
+[python version]: https://pypi.org/project/embody-ble
 [tests]: https://github.com/aidee-health/embody-ble/actions?workflow=Tests
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [black]: https://github.com/psf/black
@@ -74,6 +82,19 @@ Please see the [Command-line Reference] for more details.
 As of writing, you need to use the official Python release for Mac. Using brew's version does not work.
 For more, look at the [README](https://github.com/NordicSemiconductor/pc-ble-driver-py#macos-limitations)
 for Nordic's `pc-ble-driver-py`
+
+Summary of setup:
+
+```python
+# create virtual environment with official Python version
+/Library/Frameworks/Python.framework/Versions/3.9/bin/python3 -m venv .venv
+# activate virtual environment
+source .venv/bin/activate
+# install embody-ble
+pip install embody-ble
+# test installation
+embody-ble --help
+```
 
 If you're using a Mac M1 or M2 with an ARM processor, look at this thread for tips.
 

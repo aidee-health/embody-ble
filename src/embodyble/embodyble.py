@@ -80,10 +80,10 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
 
     def __init__(
         self,
-        ble_serial_port: str = None,
-        device_name: str = None,
-        msg_listener: MessageListener = None,
-        ble_msg_listener: BleMessageListener = None,
+        ble_serial_port: Optional[str] = None,
+        device_name: Optional[str] = None,
+        msg_listener: Optional[MessageListener] = None,
+        ble_msg_listener: Optional[BleMessageListener] = None,
     ) -> None:
         super().__init__()
         if ble_serial_port:

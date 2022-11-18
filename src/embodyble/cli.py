@@ -43,26 +43,60 @@ def main(args=None):
     )
     embody_ble = EmbodyBle(device_name=parsed_args.device)
     send_helper = EmbodySendHelper(sender=embody_ble)
-
-    if parsed_args.get:
-        logging.info(
-            f"{parsed_args.get}: {getattr(send_helper, get_attributes_dict.get(parsed_args.get))()}"
-        )
-    elif parsed_args.get_all:
-        for attrib in get_attributes_dict.keys():
-            logging.info(
-                f"{attrib}: {getattr(send_helper, get_attributes_dict.get(attrib))()}"
+    try:
+        if parsed_args.get:
+            print(f"{getattr(send_helper, get_attributes_dict.get(parsed_args.get))()}")
+            exit(0)
+        elif parsed_args.get_all:
+            __get_all_attributes(send_helper)
+            exit(0)
+        elif parsed_args.set_time:
+            print(f"Set current time: {send_helper.set_current_timestamp()}")
+            print(f"New current time is: {send_helper.get_current_time()}")
+            exit(0)
+        elif parsed_args.set_trace_level:
+            print(
+                f"Trace level set: {send_helper.set_trace_level(parsed_args.set_trace_level)}"
             )
-    elif parsed_args.set_time:
-        logging.info(f"Set current time: {send_helper.set_current_timestamp()}")
-        logging.info(f"New current time is: {send_helper.get_current_time()}")
-    elif parsed_args.set_trace_level:
-        logging.info(
-            f"Trace level set: {send_helper.set_trace_level(parsed_args.set_trace_level)}"
-        )
-    elif parsed_args.list_files:
-        logging.info(f"Files: {send_helper.get_files()}")
-    embody_ble.shutdown()
+            exit(0)
+        elif parsed_args.list_files:
+            __list_files(send_helper)
+            exit(0)
+        elif parsed_args.delete_file:
+            print(
+                f"Delete file {parsed_args.delete_file}:"
+                f" {send_helper.delete_file(file_name=parsed_args.delete_file)}"
+            )
+            exit(0)
+        elif parsed_args.delete_files:
+            print(f"Delete files: {send_helper.delete_all_files()}")
+            exit(0)
+        elif parsed_args.reformat_disk:
+            print(f"Reformatting disk: {send_helper.reformat_disk()}")
+            exit(0)
+        elif parsed_args.reset:
+            print(f"Resetting device: {send_helper.reset_device()}")
+            exit(0)
+        elif parsed_args.reboot:
+            print(f"Rebooting device: {send_helper.reboot_device()}")
+            exit(0)
+
+    finally:
+        embody_ble.shutdown()
+
+
+def __get_all_attributes(send_helper):
+    for attrib in get_attributes_dict.keys():
+        print(f"{attrib}: {getattr(send_helper, get_attributes_dict.get(attrib))()}")
+
+
+def __list_files(send_helper):
+    files = send_helper.get_files()
+    if len(files) > 0:
+        for name, size in send_helper.get_files():
+            print(f"{name} ({round(size/1024)}KB)")
+    else:
+        print("[]")
 
 
 def __get_args(args):
@@ -74,7 +108,7 @@ def __get_parser():
     """Return ArgumentParser for pypyr cli."""
     parser = argparse.ArgumentParser(
         allow_abbrev=True,
-        description="EmBody CLI application",
+        description="EmBody BLE CLI application",
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
@@ -83,17 +117,9 @@ def __get_parser():
         "--log-level",
         help=f"Log level ({log_levels})",
         choices=log_levels,
-        default="INFO",
+        default="WARNING",
     )
-    parser.add_argument(
-        "--channel",
-        help="Use serial or ble",
-        choices=["serial", "ble"],
-        default="serial",
-    )
-    parser.add_argument(
-        "--device", help="Device name (serial or ble name)", default=None
-    )
+    parser.add_argument("--device", help="Device name (ble name)", default=None)
     parser.add_argument(
         "--get", help="Get attribute", choices=get_attributes_dict.keys(), default=None
     )
@@ -104,6 +130,12 @@ def __get_parser():
         "--set-time", help="Set time (to now)", action="store_true", default=None
     )
     parser.add_argument(
+        "--download-file", help="Download specified file", type=str, default=None
+    )
+    parser.add_argument(
+        "--download-files", help="Download all files", action="store_true", default=None
+    )
+    parser.add_argument(
         "--set-trace-level", help="Set trace level", type=int, default=None
     )
     parser.add_argument(
@@ -111,6 +143,21 @@ def __get_parser():
         help="List all files on device",
         action="store_true",
         default=None,
+    )
+    parser.add_argument(
+        "--delete-file", help="Delete specified file", type=str, default=None
+    )
+    parser.add_argument(
+        "--delete-files", help="Delete all files", action="store_true", default=None
+    )
+    parser.add_argument(
+        "--reformat-disk", help="Reformat disk", action="store_true", default=None
+    )
+    parser.add_argument(
+        "--reset", help="Reset device", action="store_true", default=None
+    )
+    parser.add_argument(
+        "--reboot", help="Reboot device", action="store_true", default=None
     )
 
     parser.add_argument(
