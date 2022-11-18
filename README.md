@@ -1,10 +1,18 @@
 # Embody BLE
 
+[![PyPI](https://img.shields.io/pypi/v/embody-ble.svg)][pypi_]
+[![Status](https://img.shields.io/pypi/status/embody-ble.svg)][status]
+[![Python Version](https://img.shields.io/pypi/pyversions/embody-ble)][python version]
+[![License](https://img.shields.io/pypi/l/embody-ble)][license]
+
 [![Tests](https://github.com/aidee-health/embody-ble/workflows/Tests/badge.svg)][tests]
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
 
+[pypi_]: https://pypi.org/project/embody-ble/
+[status]: https://pypi.org/project/embody-ble/
+[python version]: https://pypi.org/project/embody-ble
 [tests]: https://github.com/aidee-health/embody-ble/actions?workflow=Tests
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [black]: https://github.com/psf/black
