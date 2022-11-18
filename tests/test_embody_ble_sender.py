@@ -9,7 +9,7 @@ from pc_ble_driver_py.ble_adapter import BLEAdapter
 from embodyble import embodyble
 
 
-def test_send_asynch() -> None:
+def test_send_async() -> None:
     """Connect and do a dummy request/response."""
     ble_adapter: BLEAdapter = Mock()
     sender = embodyble._MessageSender(ble_adapter=ble_adapter, ble_conn_handle=1)
