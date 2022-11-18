@@ -83,6 +83,19 @@ As of writing, you need to use the official Python release for Mac. Using brew's
 For more, look at the [README](https://github.com/NordicSemiconductor/pc-ble-driver-py#macos-limitations)
 for Nordic's `pc-ble-driver-py`
 
+Summary of setup:
+
+```python
+# create virtual environment with official Python version
+/Library/Frameworks/Python.framework/Versions/3.9/bin/python3 -m venv .venv
+# activate virtual environment
+source .venv/bin/activate
+# install embody-ble
+pip install embody-ble
+# test installation
+embody-ble --help
+```
+
 If you're using a Mac M1 or M2 with an ARM processor, look at this thread for tips.
 
 ## Contributing
