@@ -37,35 +37,29 @@
 
 ## Installation
 
-You can install _Embody BLE_ via [pip] from private Github repo:
+You can install _Embody BLE_ via [pip]:
 
 ```console
-$ pip install --upgrade --force-reinstall "git+https://github.com/aidee-health/embody-ble@v1.0.4#egg=embodyble"
+$ pip install embody-ble
 ```
 
-(the `--upgrade` and `--force-reinstall` flags are not strictly necessary).
-
-If you have the repository cloned locally, you can simply do:
-
-```
-pip install -e /path/to/repository
-```
+This adds `embody-ble` as a library, but also provides the CLI application with the same name.
 
 ## Usage
 
-A very basic example where you send a message request and get a response (resolving device serial no through serial port):
+A very basic example where you send a message request and get a response:
 
 ```python
-from embodyble import embodyble
-from embodycodec import codec
+from embodyble.embodyble import EmbodyBle
+from embodyserial.helpers import EmbodySendHelper
 
-comm = embodyble.EmbodyBle()
-response = comm.send_message_and_wait_for_response(codec.ListFiles())
-print(f"Received response: {response}")
-comm.shutdown()
+embody_ble = EmbodyBle()
+send_helper = EmbodySendHelper(sender=embody_ble)
+print(f"Serial no: {send_helper.get_serial_no()}")
+embody_ble.shutdown()
 ```
 
-If you want to see more of what happens under the hood, activate debug logging:
+If you want to see more of what happens under the hood, activate debug logging before setting up `EmbodyBle`:
 
 ```python
 import logging
@@ -73,7 +67,44 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 ```
 
-Please see the [Command-line Reference] for more details.
+## Using the application from the command line
+
+The application also provides a CLI application that is automatically added to the path when installing via pip.
+
+Once installed with pip, type:
+
+```
+embody-ble --help
+```
+
+To see which options are available.
+
+> **Note**
+> The serial port is automatically detected, but can be overridden by using the `--device` option.
+
+### Example - List all attribute values
+
+```shell
+embody-ble --get-all
+```
+
+### Example - Get serial no of device
+
+```shell
+embody-ble --get serialno
+```
+
+### Example - List files over serial port
+
+```shell
+embody-ble --list-files
+```
+
+### Example - Set time current time (UTC)
+
+```shell
+embody-ble --set-time
+```
 
 ## Troubleshooting
 
@@ -83,7 +114,7 @@ As of writing, you need to use the official Python release for Mac. Using brew's
 For more, look at the [README](https://github.com/NordicSemiconductor/pc-ble-driver-py#macos-limitations)
 for Nordic's `pc-ble-driver-py`
 
-Summary of setup:
+Suggested setup, using a virtual environment:
 
 ```python
 # create virtual environment with official Python version
@@ -96,7 +127,7 @@ pip install embody-ble
 embody-ble --help
 ```
 
-If you're using a Mac M1 or M2 with an ARM processor, look at this thread for tips.
+If you're using a Mac M1 or M2 with an ARM processor, look at [this thread](https://github.com/NordicSemiconductor/pc-ble-driver-py/issues/202) for tips.
 
 ## Contributing
 
