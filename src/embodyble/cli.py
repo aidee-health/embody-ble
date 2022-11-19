@@ -41,9 +41,13 @@ def main(args=None):
         level=getattr(logging, parsed_args.log_level.upper(), logging.INFO),
         format="%(asctime)s:%(levelname)s:%(message)s",
     )
-    embody_ble = EmbodyBle(device_name=parsed_args.device)
+    embody_ble = EmbodyBle()
     send_helper = EmbodySendHelper(sender=embody_ble)
     try:
+        if parsed_args.list_candidates:
+            print(f"Candidates: {embody_ble.discover_candidates()}")
+            exit(0)
+        embody_ble.connect(device_name=parsed_args.device)
         if parsed_args.get:
             print(f"{getattr(send_helper, get_attributes_dict.get(parsed_args.get))()}")
             exit(0)
@@ -118,6 +122,9 @@ def __get_parser():
         help=f"Log level ({log_levels})",
         choices=log_levels,
         default="WARNING",
+    )
+    parser.add_argument(
+        "--list-candidates", help="Discover embody devices", default=None
     )
     parser.add_argument("--device", help="Device name (ble name)", default=None)
     parser.add_argument(
