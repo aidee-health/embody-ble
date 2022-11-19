@@ -15,7 +15,7 @@ if not blecomm.EmbodyBle.ble_serial_port_present():
 
 def test_send_codec_message_and_wait_for_response() -> None:
     """Connect and do a dummy request/response."""
-    communicator = blecomm.EmbodyBle(device_name="G3_90F9")
+    communicator = blecomm.EmbodyBle()
     response = communicator.send_message_and_wait_for_response(
         codec.GetAttribute(attributes.SerialNoAttribute.attribute_id)
     )
