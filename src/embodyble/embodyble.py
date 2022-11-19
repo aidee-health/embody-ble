@@ -80,16 +80,12 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
 
     def __init__(
         self,
-        ble_serial_port: Optional[str] = None,
         device_name: Optional[str] = None,
         msg_listener: Optional[MessageListener] = None,
         ble_msg_listener: Optional[BleMessageListener] = None,
     ) -> None:
         super().__init__()
-        if ble_serial_port:
-            self.__ble_serial_port = ble_serial_port
-        else:
-            self.__ble_serial_port = self.__find_ble_serial_port()
+        self.__ble_serial_port = self.__find_ble_serial_port()
         logging.info(f"Using BLE serial port {self.__ble_serial_port}")
         if device_name:
             self.__device_name = device_name
