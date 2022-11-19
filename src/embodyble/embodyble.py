@@ -494,7 +494,8 @@ if __name__ == "__main__":
         format="%(asctime)s [%(thread)d/%(threadName)s] %(message)s",
     )
     logging.info("Setting up BLE communicator")
-    communicator = EmbodyBle(device_name="G3_90F9")
+    communicator = EmbodyBle()
+    communicator.connect(device_name="G3_90F9")
     response = communicator.send_message_and_wait_for_response(
         codec.GetAttribute(attributes.AfeSettingsAllAttribute.attribute_id)
     )
