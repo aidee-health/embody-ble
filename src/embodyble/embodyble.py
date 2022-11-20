@@ -6,6 +6,7 @@ receiving response messages and subscribing for incoming messages from the devic
 import concurrent.futures
 import logging
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from queue import Empty
 from queue import Queue
@@ -65,6 +66,7 @@ NUS_RX_UUID = BLEUUID(0x0002, NUS_BASE_UUID)
 NUS_TX_UUID = BLEUUID(0x0003, NUS_BASE_UUID)
 
 CFG_TAG = 1
+EMBODY_NAME_PREFIXES = ["G3_", "EMB"]
 
 
 class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
@@ -80,22 +82,12 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
 
     def __init__(
         self,
-        ble_serial_port: Optional[str] = None,
-        device_name: Optional[str] = None,
         msg_listener: Optional[MessageListener] = None,
         ble_msg_listener: Optional[BleMessageListener] = None,
     ) -> None:
         super().__init__()
-        if ble_serial_port:
-            self.__ble_serial_port = ble_serial_port
-        else:
-            self.__ble_serial_port = self.__find_ble_serial_port()
+        self.__ble_serial_port = self.__find_ble_serial_port()
         logging.info(f"Using BLE serial port {self.__ble_serial_port}")
-        if device_name:
-            self.__device_name = device_name
-        else:
-            self.__device_name = self.__find_name_from_serial_port()
-        logging.info(f"Using EmBody device name: {self.__device_name}")
         ble_driver = BLEDriver(
             serial_port=self.__ble_serial_port,
             auto_flash=False,
@@ -104,19 +96,45 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
         )
         self.__conn_q: Queue[int] = Queue()
         self.__ble_conn_handle = -1
+        self.__device_name: Optional[str] = None
+        self.__candidate_client_list: set[str] = set()
         self.__ble_adapter = self.__setup_ble_adapter(ble_driver)
         self.__reader = _MessageReader()
         self.__ble_adapter.observer_register(self.__reader)
         self.__open_ble_driver()
+        if msg_listener:
+            self.__reader.add_message_listener(msg_listener)
+        if ble_msg_listener:
+            self.__reader.add_ble_message_listener(ble_msg_listener)
+
+    def connect(self, device_name: Optional[str] = None) -> None:
+        """Connect to specified device (or use device name from serial port as default)."""
+        if device_name:
+            self.__device_name = device_name
+        else:
+            self.__device_name = self.__find_name_from_serial_port()
+        logging.info(f"Using EmBody device name: {self.__device_name}")
         self.__connect_and_discover()
         self.__sender = _MessageSender(
             ble_adapter=self.__ble_adapter, ble_conn_handle=self.__ble_conn_handle
         )
         self.__reader.add_response_message_listener(self.__sender)
-        if msg_listener:
-            self.__reader.add_message_listener(msg_listener)
-        if ble_msg_listener:
-            self.__reader.add_ble_message_listener(ble_msg_listener)
+
+    def discover_candidates(self, timeout: int = 5) -> set[str]:
+        """Discover available EmBody devices."""
+        self.__candidate_client_list = set()
+        orig_name = self.__device_name
+        try:
+            self.__ble_adapter.driver.ble_gap_scan_start(
+                scan_params=BLEGapScanParams(
+                    interval_ms=200, window_ms=150, timeout_s=timeout
+                )
+            )
+            time.sleep(timeout)
+            return self.__candidate_client_list
+        finally:
+            self.__device_name = orig_name
+            self.__candidate_client_list = set()
 
     def __setup_ble_adapter(self, ble_driver: BLEDriver) -> BLEAdapter:
         """Configure BLE Adapter."""
@@ -235,7 +253,12 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
         logging.debug(
             f"Received advertisement report, address: 0x{address_string}, device_name: {dev_name}"
         )
-        if dev_name == self.__device_name:
+        if not self.__device_name and any(
+            dev_name.startswith(candidate_prefix)
+            for candidate_prefix in EMBODY_NAME_PREFIXES
+        ):
+            self.__candidate_client_list.add(dev_name)
+        elif dev_name == self.__device_name:
             logging.debug(
                 f"Received advertisement report from our device ({dev_name}). Connecting..."
             )
@@ -314,7 +337,7 @@ class _MessageSender(ResponseMessageListener):
         self.__send_async(msg, False)
 
     def send_message_and_wait_for_response(
-        self, msg: codec.Message, timeout: Optional[int] = 30
+        self, msg: codec.Message, timeout: Optional[int] = 10
     ) -> Optional[codec.Message]:
         future = self.__send_async(msg, True)
         try:
@@ -392,6 +415,7 @@ class _MessageReader(BLEAdapterObserver):
                     pos += msg.length
             else:
                 logging.debug(f"Received BLE message for uuid {uuid}")
+                self.__handle_ble_message(uuid=uuid, data=data)
 
         except Exception as e:
             logging.warning(f"Receive error during incoming message: {e}")
@@ -474,7 +498,8 @@ if __name__ == "__main__":
         format="%(asctime)s [%(thread)d/%(threadName)s] %(message)s",
     )
     logging.info("Setting up BLE communicator")
-    communicator = EmbodyBle(device_name="G3_90F9")
+    communicator = EmbodyBle()
+    communicator.connect(device_name="G3_90F9")
     response = communicator.send_message_and_wait_for_response(
         codec.GetAttribute(attributes.AfeSettingsAllAttribute.attribute_id)
     )

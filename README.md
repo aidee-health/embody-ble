@@ -82,6 +82,12 @@ To see which options are available.
 > **Note**
 > The serial port is automatically detected, but can be overridden by using the `--device` option.
 
+### Example - List all available EmBody devices
+
+```shell
+embody-ble --list-candidates
+```
+
 ### Example - List all attribute values
 
 ```shell
