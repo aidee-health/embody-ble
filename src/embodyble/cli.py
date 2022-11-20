@@ -21,8 +21,8 @@ get_attributes_dict: dict[str, str] = {
     "battery": "get_battery_level",
     "hr": "get_heart_rate",
     "chargestate": "get_charge_state",
-    "temperature": "get_temperature",
     "firmware": "get_firmware_version",
+    "temperature": "get_temperature",
 }
 
 
@@ -124,7 +124,10 @@ def __get_parser():
         default="WARNING",
     )
     parser.add_argument(
-        "--list-candidates", help="Discover embody devices", default=None
+        "--list-candidates",
+        help="Discover embody devices",
+        action="store_true",
+        default=None,
     )
     parser.add_argument("--device", help="Device name (ble name)", default=None)
     parser.add_argument(

@@ -6,6 +6,7 @@ receiving response messages and subscribing for incoming messages from the devic
 import concurrent.futures
 import logging
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from queue import Empty
 from queue import Queue
@@ -96,7 +97,7 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
         self.__conn_q: Queue[int] = Queue()
         self.__ble_conn_handle = -1
         self.__device_name: Optional[str] = None
-        self.__candidate_client_list: list[str] = []
+        self.__candidate_client_list: set[str] = set()
         self.__ble_adapter = self.__setup_ble_adapter(ble_driver)
         self.__reader = _MessageReader()
         self.__ble_adapter.observer_register(self.__reader)
@@ -119,9 +120,9 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
         )
         self.__reader.add_response_message_listener(self.__sender)
 
-    def discover_candidates(self, timeout: int = 10) -> list[str]:
+    def discover_candidates(self, timeout: int = 5) -> set[str]:
         """Discover available EmBody devices."""
-        self.__candidate_client_list = []
+        self.__candidate_client_list = set()
         orig_name = self.__device_name
         try:
             self.__ble_adapter.driver.ble_gap_scan_start(
@@ -129,10 +130,11 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
                     interval_ms=200, window_ms=150, timeout_s=timeout
                 )
             )
+            time.sleep(timeout)
             return self.__candidate_client_list
         finally:
             self.__device_name = orig_name
-            self.__candidate_client_list = []
+            self.__candidate_client_list = set()
 
     def __setup_ble_adapter(self, ble_driver: BLEDriver) -> BLEAdapter:
         """Configure BLE Adapter."""
@@ -251,10 +253,11 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
         logging.debug(
             f"Received advertisement report, address: 0x{address_string}, device_name: {dev_name}"
         )
-        if not self.__dev_name and any(
-            candidate_prefix in dev_name for candidate_prefix in EMBODY_NAME_PREFIXES
+        if not self.__device_name and any(
+            dev_name.startswith(candidate_prefix)
+            for candidate_prefix in EMBODY_NAME_PREFIXES
         ):
-            self.__candidate_client_list.append(dev_name)
+            self.__candidate_client_list.add(dev_name)
         elif dev_name == self.__device_name:
             logging.debug(
                 f"Received advertisement report from our device ({dev_name}). Connecting..."
@@ -334,7 +337,7 @@ class _MessageSender(ResponseMessageListener):
         self.__send_async(msg, False)
 
     def send_message_and_wait_for_response(
-        self, msg: codec.Message, timeout: Optional[int] = 30
+        self, msg: codec.Message, timeout: Optional[int] = 10
     ) -> Optional[codec.Message]:
         future = self.__send_async(msg, True)
         try:
@@ -412,6 +415,7 @@ class _MessageReader(BLEAdapterObserver):
                     pos += msg.length
             else:
                 logging.debug(f"Received BLE message for uuid {uuid}")
+                self.__handle_ble_message(uuid=uuid, data=data)
 
         except Exception as e:
             logging.warning(f"Receive error during incoming message: {e}")
