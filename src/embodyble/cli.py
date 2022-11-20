@@ -45,7 +45,7 @@ def main(args=None):
     send_helper = EmbodySendHelper(sender=embody_ble)
     try:
         if parsed_args.list_candidates:
-            print(f"Candidates: {embody_ble.discover_candidates()}")
+            print(f"Candidates: {embody_ble.discover_candidates(timeout=3)}")
             exit(0)
         embody_ble.connect(device_name=parsed_args.device)
         if parsed_args.get:
