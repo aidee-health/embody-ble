@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "embody-ble"
-version = "1.0.8"
+version = "1.0.9"
 description = "Communicate with the EmBody device over BLE (bluetooth)"
 authors = ["Aidee Health AS <hello@aidee.io>"]
 license = "MIT"
@@ -20,7 +20,7 @@ Changelog = "https://github.com/aidee-health/embody-ble/releases"
 [tool.poetry.dependencies]
 python = ">=3.9,<3.10"
 pyserial = "^3.5"
-embody-serial = ">=1.0.7"
+embody-serial = ">=1.0.8"
 pc-ble-driver-py = ">=0.17.0"
 
 [tool.poetry.dev-dependencies]
