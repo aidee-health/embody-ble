@@ -219,7 +219,7 @@ pipenv = ["pipenv"]
 
 [[package]]
 name = "embody-codec"
-version = "1.0.11"
+version = "1.0.15"
 description = "Embody Protocol Codec"
 category = "main"
 optional = false
@@ -1442,8 +1442,8 @@ dparse = [
     {file = "dparse-0.6.2.tar.gz", hash = "sha256:d45255bda21f998bc7ddf2afd5e62505ba6134756ba2d42a84c56b0826614dfe"},
 ]
 embody-codec = [
-    {file = "embody_codec-1.0.11-py3-none-any.whl", hash = "sha256:01e8d11d803f1090078353dab680be5d17625bff10f86bf9539d4b312520197c"},
-    {file = "embody_codec-1.0.11.tar.gz", hash = "sha256:86ac5260818f4b8e0d6b365897e4cf7558372c9f0c2958e515de6bd84631c1bb"},
+    {file = "embody_codec-1.0.15-py3-none-any.whl", hash = "sha256:ed1baef67abee8e8e64f73eeb19ce12b61e57d3285e2754ef6a6ab3d7ccf38a3"},
+    {file = "embody_codec-1.0.15.tar.gz", hash = "sha256:f863bc495cc86a2e45a74423fbf51436b9a9de935d3537efedf06672b450eb93"},
 ]
 embody-serial = [
     {file = "embody-serial-1.0.8.tar.gz", hash = "sha256:ae0d05d7b53026bb58c70e7b28ef5e9aa0d5493c1646bf96e17b9291a6e82411"},
