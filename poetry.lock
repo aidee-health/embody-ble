@@ -227,14 +227,14 @@ python-versions = ">=3.7,<4.0"
 
 [[package]]
 name = "embody-serial"
-version = "1.0.8"
+version = "1.0.10"
 description = "Communicate with the embody device over a serial port"
 category = "main"
 optional = false
-python-versions = ">=3.8,<=3.11"
+python-versions = ">=3.8,<4.0"
 
 [package.dependencies]
-embody-codec = ">1.0.9"
+embody-codec = ">=1.0.12"
 pyserial = ">=3.5,<4.0"
 
 [[package]]
@@ -1446,8 +1446,8 @@ embody-codec = [
     {file = "embody_codec-1.0.15.tar.gz", hash = "sha256:f863bc495cc86a2e45a74423fbf51436b9a9de935d3537efedf06672b450eb93"},
 ]
 embody-serial = [
-    {file = "embody-serial-1.0.8.tar.gz", hash = "sha256:ae0d05d7b53026bb58c70e7b28ef5e9aa0d5493c1646bf96e17b9291a6e82411"},
-    {file = "embody_serial-1.0.8-py3-none-any.whl", hash = "sha256:2cbc017f860eb8b7d8c6407a9cb9b40bc16b99eb67c1258cad66a1e3c2539f3b"},
+    {file = "embody_serial-1.0.10-py3-none-any.whl", hash = "sha256:c046a42bb81586d76a4c2bd4d2b926d3108ec95a1b497739ef2baa1218a85577"},
+    {file = "embody_serial-1.0.10.tar.gz", hash = "sha256:5aa37318fb599b28249cf7c79762274c5724f9f136038d7094f3a50258447b89"},
 ]
 exceptiongroup = [
     {file = "exceptiongroup-1.0.4-py3-none-any.whl", hash = "sha256:542adf9dea4055530d6e1279602fa5cb11dab2395fa650b8674eaec35fc4a828"},
@@ -1522,6 +1522,7 @@ jinja2 = [
     {file = "Jinja2-3.1.2.tar.gz", hash = "sha256:31351a702a408a9e7595a8fc6150fc3f43bb6bf7e319770cbc0db9df9437e852"},
 ]
 livereload = [
+    {file = "livereload-2.6.3-py2.py3-none-any.whl", hash = "sha256:ad4ac6f53b2d62bb6ce1a5e6e96f1f00976a32348afedcb4b6d68df2a1d346e4"},
     {file = "livereload-2.6.3.tar.gz", hash = "sha256:776f2f865e59fde56490a56bcc6773b6917366bce0c267c60ee8aaf1a0959869"},
 ]
 markdown-it-py = [
