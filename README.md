@@ -55,6 +55,7 @@ from embodyserial.helpers import EmbodySendHelper
 
 embody_ble = EmbodyBle()
 send_helper = EmbodySendHelper(sender=embody_ble)
+embody_ble.connect()
 print(f"Serial no: {send_helper.get_serial_no()}")
 embody_ble.shutdown()
 ```
