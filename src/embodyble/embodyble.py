@@ -136,6 +136,14 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
             self.__device_name = orig_name
             self.__candidate_client_list = set()
 
+    def get_ble_adapter(self) -> BLEAdapter:
+        """Get BLE adapter."""
+        return self.__ble_adapter
+
+    def get_ble_driver(self) -> BLEDriver:
+        """Get BLE driver."""
+        return self.__ble_adapter.driver
+
     def __setup_ble_adapter(self, ble_driver: BLEDriver) -> BLEAdapter:
         """Configure BLE Adapter."""
         adapter = BLEAdapter(ble_driver)
