@@ -21,8 +21,9 @@ get_attributes_dict: dict[str, str] = {
     "battery": "get_battery_level",
     "hr": "get_heart_rate",
     "chargestate": "get_charge_state",
-    "firmware": "get_firmware_version",
     "temperature": "get_temperature",
+    "firmware": "get_firmware_version",
+    "on_body_state": "get_on_body_state",
 }
 
 
@@ -44,10 +45,6 @@ def main(args=None):
     embody_ble = EmbodyBle()
     send_helper = EmbodySendHelper(sender=embody_ble)
     try:
-        if parsed_args.list_candidates:
-            print(f"Candidates: {embody_ble.discover_candidates(timeout=3)}")
-            exit(0)
-        embody_ble.connect(device_name=parsed_args.device)
         if parsed_args.get:
             print(f"{getattr(send_helper, get_attributes_dict.get(parsed_args.get))()}")
             exit(0)
@@ -91,7 +88,12 @@ def main(args=None):
 
 def __get_all_attributes(send_helper):
     for attrib in get_attributes_dict.keys():
-        print(f"{attrib}: {getattr(send_helper, get_attributes_dict.get(attrib))()}")
+        sys.stdout.write(f"{attrib}: ")
+        sys.stdout.flush()
+        try:
+            print(getattr(send_helper, get_attributes_dict.get(attrib))())
+        except Exception as e:
+            print(f"Error: {e}")
 
 
 def __list_files(send_helper):
@@ -112,7 +114,7 @@ def __get_parser():
     """Return ArgumentParser for pypyr cli."""
     parser = argparse.ArgumentParser(
         allow_abbrev=True,
-        description="EmBody BLE CLI application",
+        description="EmBody CLI application",
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
@@ -123,13 +125,7 @@ def __get_parser():
         choices=log_levels,
         default="WARNING",
     )
-    parser.add_argument(
-        "--list-candidates",
-        help="Discover embody devices",
-        action="store_true",
-        default=None,
-    )
-    parser.add_argument("--device", help="Device name (ble name)", default=None)
+    parser.add_argument("--device", help="Serial port name", default=None)
     parser.add_argument(
         "--get", help="Get attribute", choices=get_attributes_dict.keys(), default=None
     )
@@ -138,12 +134,6 @@ def __get_parser():
     )
     parser.add_argument(
         "--set-time", help="Set time (to now)", action="store_true", default=None
-    )
-    parser.add_argument(
-        "--download-file", help="Download specified file", type=str, default=None
-    )
-    parser.add_argument(
-        "--download-files", help="Download all files", action="store_true", default=None
     )
     parser.add_argument(
         "--set-trace-level", help="Set trace level", type=int, default=None
