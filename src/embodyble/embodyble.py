@@ -16,6 +16,7 @@ import serial
 import serial.tools.list_ports
 from embodycodec import attributes
 from embodycodec import codec
+from embodycodec import types
 from embodyserial import embodyserial
 from pc_ble_driver_py.ble_adapter import BLEAdapter
 from pc_ble_driver_py.ble_driver import BLEUUID
@@ -312,6 +313,15 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
         )
         return device_name
 
+    def configure_reporting(self, attribute_id: int, reporting_rate: int) -> None:
+        for i in self.__reader.get_ble_message_listeners():
+            if i.attribute_id == attribute_id:
+                self.__sender.configure_reporting_listener(attribute_id, reporting_rate)
+                return
+        raise EmbodyBleError(
+            f"Attribute ID {attribute_id} not found in reporting listeners"
+        )
+       
 
 class _MessageSender(ResponseMessageListener):
     """All send functionality is handled by this class.
@@ -362,6 +372,13 @@ class _MessageSender(ResponseMessageListener):
     ) -> concurrent.futures.Future[Optional[codec.Message]]:
         return self.__send_executor.submit(self.__do_send, msg, wait_for_response)
 
+    def configure_reporting_listener(self, attribute_id: int, reporting_rate: int) -> None:
+        response = codec.ConfigureReporting(attribute_id=attribute_id, 
+                                            reporting=types.Reporting(interval=reporting_rate, on_change=0x01))
+        data = response.encode()
+        logging.debug(f"Configuering listener for: {attribute_id}")
+        self.__ble_adapter.write_req(self.__ble_conn_handle, NUS_RX_UUID, data)
+        
     def __do_send(
         self, msg: codec.Message, wait_for_response: bool = True
     ) -> Optional[codec.Message]:
@@ -454,6 +471,9 @@ class _MessageReader(BLEAdapterObserver):
 
     def add_message_listener(self, listener: MessageListener) -> None:
         self.__message_listeners.append(listener)
+        
+    def get_ble_message_listeners(self) -> list[int]:
+        return self.__ble_message_listeners
 
     def __handle_response_message(self, msg: codec.Message) -> None:
         logging.debug(f"Handling new response message: {msg}")
