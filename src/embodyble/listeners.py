@@ -18,10 +18,11 @@ class MessageListener(ABC):
 
 class BleMessageListener(ABC):
     """Listener interface for being notified of incoming BLE messages."""
+
     def __init__(self, attribute_id: int):
-        self.data_list = []
+        self.data_list = [int]
         self.attribute_id = attribute_id
-    
+
     def ble_message_received(self, uuid: BLEUUID, data: list[int]) -> None:
         """Process received message"""
         if uuid.uuid == self.attribute_id:
@@ -31,7 +32,7 @@ class BleMessageListener(ABC):
 
     def get_data_list(self):
         return self.data_list
-        
+
 
 class ResponseMessageListener(ABC):
     """Listener interface for being notified of incoming response messages."""
