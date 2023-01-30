@@ -16,7 +16,8 @@ class MessageListener:
 
     def message_received(self, msg: codec.Message) -> None:
         """Process received message"""
-        self.data_list.append(msg.value.value)
+        if msg.value.value:
+            self.data_list.append(msg.value.value)
 
     def get_data_list(self):
         return self.data_list
