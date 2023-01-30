@@ -7,8 +7,9 @@ from embodycodec import codec
 from pc_ble_driver_py.ble_driver import BLEUUID
 
 
-class MessageListener(ABC):
+class MessageListener:
     """Listener interface for being notified of incoming messages."""
+
     def __init__(self, attribute_id: int):
         self.attribute_id = attribute_id
         self.data_list = [int]
@@ -29,10 +30,9 @@ class BleMessageListener(ABC):
         """Process received message"""
 
 
-
 class ResponseMessageListener(ABC):
     """Listener interface for being notified of incoming response messages."""
-    
+
     @abstractmethod
     def response_message_received(self, msg: codec.Message) -> None:
         """Process received response message"""

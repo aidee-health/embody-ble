@@ -318,7 +318,7 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
 
     def add_ble_message_listener(self, listener: BleMessageListener) -> None:
         self.__reader.add_ble_message_listener(listener)
-    
+
     def add_response_message_listener(self, listener: ResponseMessageListener) -> None:
         self.__reader.add_response_message_listener(listener)
 
