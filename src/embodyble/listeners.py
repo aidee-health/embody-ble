@@ -9,38 +9,33 @@ from pc_ble_driver_py.ble_driver import BLEUUID
 
 class MessageListener(ABC):
     """Listener interface for being notified of incoming messages."""
+    def __init__(self, attribute_id: int):
+        self.attribute_id = attribute_id
+        self.data_list = [int]
 
-    @abstractmethod
     def message_received(self, msg: codec.Message) -> None:
         """Process received message"""
-        pass
-
-
-class BleMessageListener(ABC):
-    """Listener interface for being notified of incoming BLE messages."""
-
-    def __init__(self, attribute_id: int):
-        self.data_list = [int]
-        self.attribute_id = attribute_id
-
-    def ble_message_received(self, uuid: BLEUUID, data: list[int]) -> None:
-        """Process received message"""
-        if uuid.uuid == self.attribute_id:
-            self.data_list.append(data)
-
-        print(data)
+        self.data_list.append(msg.value.value)
 
     def get_data_list(self):
         return self.data_list
 
 
+class BleMessageListener(ABC):
+    """Listener interface for being notified of incoming BLE messages."""
+
+    @abstractmethod
+    def ble_message_received(self, uuid: BLEUUID, data: list[int]) -> None:
+        """Process received message"""
+
+
+
 class ResponseMessageListener(ABC):
     """Listener interface for being notified of incoming response messages."""
-
+    
     @abstractmethod
     def response_message_received(self, msg: codec.Message) -> None:
         """Process received response message"""
-        pass
 
 
 class ConnectionListener(ABC):
