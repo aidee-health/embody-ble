@@ -16,6 +16,7 @@ import serial
 import serial.tools.list_ports
 from embodycodec import attributes
 from embodycodec import codec
+from embodycodec import types
 from embodyserial import embodyserial
 from pc_ble_driver_py.ble_adapter import BLEAdapter
 from pc_ble_driver_py.ble_driver import BLEUUID
@@ -36,6 +37,7 @@ from pc_ble_driver_py.observers import BLEDriverObserver
 from serial.serialutil import SerialException
 
 from .exceptions import EmbodyBleError
+from .listeners import AttributeChangedMessageListener
 from .listeners import BleMessageListener
 from .listeners import MessageListener
 from .listeners import ResponseMessageListener
@@ -312,6 +314,24 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
         )
         return device_name
 
+    def add_message_listener(self, listener: MessageListener) -> None:
+        self.__reader.add_message_listener(listener)
+
+    def add_ble_message_listener(self, listener: BleMessageListener) -> None:
+        self.__reader.add_ble_message_listener(listener)
+
+    def add_response_message_listener(self, listener: ResponseMessageListener) -> None:
+        self.__reader.add_response_message_listener(listener)
+
+    def configure_reporting(self, attribute_id: int, reporting_rate: int) -> None:
+        for i in self.__reader.get_attrmessage_listeners():
+            if i.attribute_id == attribute_id:
+                self.__sender.configure_reporting_listener(attribute_id, reporting_rate)
+                return
+        raise EmbodyBleError(
+            f"Attribute ID {attribute_id} not found in reporting listeners"
+        )
+
 
 class _MessageSender(ResponseMessageListener):
     """All send functionality is handled by this class.
@@ -362,6 +382,17 @@ class _MessageSender(ResponseMessageListener):
     ) -> concurrent.futures.Future[Optional[codec.Message]]:
         return self.__send_executor.submit(self.__do_send, msg, wait_for_response)
 
+    def configure_reporting_listener(
+        self, attribute_id: int, reporting_rate: int
+    ) -> None:
+        response = codec.ConfigureReporting(
+            attribute_id=attribute_id,
+            reporting=types.Reporting(interval=reporting_rate, on_change=0x01),
+        )
+        data = response.encode()
+        logging.debug(f"Configuering listener for: {attribute_id}")
+        self.__ble_adapter.write_req(self.__ble_conn_handle, NUS_RX_UUID, data)
+
     def __do_send(
         self, msg: codec.Message, wait_for_response: bool = True
     ) -> Optional[codec.Message]:
@@ -393,9 +424,13 @@ class _MessageReader(BLEAdapterObserver):
         self.__response_message_listener_executor = ThreadPoolExecutor(
             max_workers=1, thread_name_prefix="rsp-worker"
         )
+        self.__attr_changed_message_listener_executor = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="acrcv-worker"
+        )
         self.__message_listeners: list[MessageListener] = []
         self.__ble_message_listeners: list[BleMessageListener] = []
         self.__response_message_listeners: list[ResponseMessageListener] = []
+        self.__attribute_changed_listeners: list[AttributeChangedMessageListener] = []
 
     def stop(self) -> None:
         self.__message_listener_executor.shutdown(wait=False, cancel_futures=False)
@@ -430,9 +465,23 @@ class _MessageReader(BLEAdapterObserver):
 
     def __handle_incoming_message(self, msg: codec.Message) -> None:
         if msg.msg_type < 0x80:
-            self.__handle_message(msg)
+            if isinstance(msg, codec.AttributeChanged):
+                print("true")
+                self.__handle_attribute_changed_message(msg)
+            else:
+                self.__handle_message(msg)
+
         else:
             self.__handle_response_message(msg)
+
+    def __handle_attribute_changed_message(self, msg: codec.Message) -> None:
+        logging.debug(f"Handling new message: {msg}")
+        if len(self.__message_listeners) == 0:
+            return
+        for listener in self.__attribute_changed_listeners:
+            self.__message_listener_executor.submit(
+                _MessageReader.__notify_attr_changed_message_listener, listener, msg
+            )
 
     def __handle_message(self, msg: codec.Message) -> None:
         logging.debug(f"Handling new message: {msg}")
@@ -442,6 +491,15 @@ class _MessageReader(BLEAdapterObserver):
             self.__message_listener_executor.submit(
                 _MessageReader.__notify_message_listener, listener, msg
             )
+
+    @staticmethod
+    def __notify_attr_changed_message_listener(
+        listener: AttributeChangedMessageListener, msg: codec.Message
+    ) -> None:
+        try:
+            listener.message_received(msg)
+        except Exception as e:
+            logging.warning(f"Error notifying listener: {str(e)}", exc_info=True)
 
     @staticmethod
     def __notify_message_listener(
@@ -454,6 +512,20 @@ class _MessageReader(BLEAdapterObserver):
 
     def add_message_listener(self, listener: MessageListener) -> None:
         self.__message_listeners.append(listener)
+
+    def add_attribute_changed_listener(
+        self, listener: AttributeChangedMessageListener
+    ) -> None:
+        self.__attribute_changed_listeners.append(listener)
+
+    def get_ble_message_listeners(self) -> list[BleMessageListener]:
+        return self.__ble_message_listeners
+
+    def get_message_listeners(self) -> list[MessageListener]:
+        return self.__message_listeners
+
+    def get_attribute_changed_listeners(self) -> list[AttributeChangedMessageListener]:
+        return self.__attribute_changed_listeners
 
     def __handle_response_message(self, msg: codec.Message) -> None:
         logging.debug(f"Handling new response message: {msg}")
