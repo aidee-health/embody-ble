@@ -524,7 +524,7 @@ class _MessageReader(BLEAdapterObserver):
     def get_message_listeners(self) -> list[MessageListener]:
         return self.__message_listeners
 
-    def get_attribute_changed_listeners(self) -> list[MessageListener]:
+    def get_attribute_changed_listeners(self) -> list[AttributeChangedMessageListener]:
         return self.__attribute_changed_listeners
 
     def __handle_response_message(self, msg: codec.Message) -> None:
