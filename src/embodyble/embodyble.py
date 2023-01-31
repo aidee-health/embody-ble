@@ -324,7 +324,7 @@ class EmbodyBle(BLEDriverObserver, embodyserial.EmbodySender):
         self.__reader.add_response_message_listener(listener)
 
     def configure_reporting(self, attribute_id: int, reporting_rate: int) -> None:
-        for i in self.__reader.get_message_listeners():
+        for i in self.__reader.get_attrmessage_listeners():
             if i.attribute_id == attribute_id:
                 self.__sender.configure_reporting_listener(attribute_id, reporting_rate)
                 return
@@ -523,6 +523,9 @@ class _MessageReader(BLEAdapterObserver):
 
     def get_message_listeners(self) -> list[MessageListener]:
         return self.__message_listeners
+
+    def get_attribute_changed_listeners(self) -> list[MessageListener]:
+        return self.__attribute_changed_listeners
 
     def __handle_response_message(self, msg: codec.Message) -> None:
         logging.debug(f"Handling new response message: {msg}")
