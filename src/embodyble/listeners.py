@@ -49,7 +49,8 @@ class AttributeChangedMessageListener:
 
     def message_received(self, msg: codec.Message) -> None:
         """Process received message"""
-        self.data_list.append(msg.value.value)
+        if isinstance(msg, codec.AttributeChanged):
+            self.data_list.append(msg.value.value)
 
     def get_data_list(self):
         return self.data_list
