@@ -5,11 +5,14 @@ Parse command line arguments, invoke embody device.
 import argparse
 import logging
 import sys
+import time
 
 from embodyserial.helpers import EmbodySendHelper
 
 from . import __version__
+from .attrlistener import AttributeChangedListener
 from .embodyble import EmbodyBle
+from .reporter import EmbodyReporter
 
 
 get_attributes_dict: dict[str, str] = {
@@ -25,6 +28,23 @@ get_attributes_dict: dict[str, str] = {
     "firmware": "get_firmware_version",
     "on_body_state": "get_on_body_state",
 }
+
+report_attributes: list[str] = [
+    "battery_level",
+    "imu",
+    "heart_rate",
+    "belt_on_body",
+    "temperature" "heart_rate_variability",
+    "heart_rate_interval",
+    "charge_state",
+    "sleep_mode",
+    "recording",
+    "leds",
+    "firmware_update",
+    "afe_settings",
+    "single_ecg_ppg",
+    "ecg_ppg",
+]
 
 
 def main(args=None):
@@ -43,6 +63,7 @@ def main(args=None):
         format="%(asctime)s:%(levelname)s:%(message)s",
     )
     embody_ble = EmbodyBle()
+    embody_ble.connect()
     send_helper = EmbodySendHelper(sender=embody_ble)
     try:
         if parsed_args.get:
@@ -81,7 +102,13 @@ def main(args=None):
         elif parsed_args.reboot:
             print(f"Rebooting device: {send_helper.reboot_device()}")
             exit(0)
-
+        elif parsed_args.report_attribute:
+            attr_changed_listener = AttributeChangedListener()
+            reporter = EmbodyReporter(embody_ble, attr_changed_listener)
+            getattr(reporter, f"start_{parsed_args.report_attribute}_reporting")(5)
+            time.sleep(30)
+            getattr(reporter, f"stop_{parsed_args.report_attribute}_reporting")()
+            exit(0)
     finally:
         embody_ble.shutdown()
 
@@ -158,6 +185,12 @@ def __get_parser():
     )
     parser.add_argument(
         "--reboot", help="Reboot device", action="store_true", default=None
+    )
+    parser.add_argument(
+        "--report-attribute",
+        help="Report selected attribute",
+        choices=report_attributes,
+        default=None,
     )
 
     parser.add_argument(
