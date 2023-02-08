@@ -29,6 +29,7 @@
 - All methods and callbacks are threadsafe
 - Separate threads for send, receive and callback processing
 - Type safe code using [mypy](https://mypy.readthedocs.io/) for type checking
+- High level callback interface for attribute reporting
 
 ## Requirements
 
@@ -82,6 +83,20 @@ To see which options are available.
 
 > **Note**
 > The serial port is automatically detected, but can be overridden by using the `--device` option.
+
+### Example - Attribute reporting
+
+To see how attribute reporting can be configured, have a look at the example in [examples/reporting_example.py](./examples/reporting_example.py)
+
+You can also test attribute reporting using the cli:
+
+```shell
+embody-ble --log-level INFO --report-attribute battery_level --report-interval 1
+```
+
+```shell
+embody-ble --log-level INFO --report-attribute heart_rate --report-interval 1000
+```
 
 ### Example - List all available EmBody devices
 
