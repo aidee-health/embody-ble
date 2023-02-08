@@ -201,12 +201,12 @@ class AttributeChangedMessageListener(MessageListener):
             elif isinstance(msg.value, attributes.LedsAttribute):
                 for listener in self.__message_listeners:
                     listener.on_leds_changed(
-                        msg.value.value.led1,
-                        msg.value.value.led1_blinking,
-                        msg.value.value.led2,
-                        msg.value.value.led2_blinking,
-                        msg.value.value.led3,
-                        msg.value.value.led3_blinking,
+                        msg.value.led1(),
+                        msg.value.led1_blinking(),
+                        msg.value.led2(),
+                        msg.value.led2_blinking(),
+                        msg.value.led3(),
+                        msg.value.led3_blinking(),
                     )
             elif isinstance(msg.value, attributes.FirmwareUpdateProgressAttribute):
                 for listener in self.__message_listeners:
@@ -234,18 +234,26 @@ class AttributeChangedMessageListener(MessageListener):
                         msg.value.value.led4,
                         msg.value.value.off_dac,
                         msg.value.value.relative_gain,
+                        None,
+                        None,
+                        None,
+                        None,
                     )
             elif isinstance(msg.value, attributes.AfeSettingsAllAttribute):
                 for listener in self.__message_listeners:
                     listener.on_afe_settings_changed(
-                        msg.value.value.rf_gain,
-                        msg.value.value.cf_value,
-                        msg.value.value.ecg_gain,
-                        msg.value.value.ioffdac_range,
-                        msg.value.value.led1,
-                        msg.value.value.led4,
-                        msg.value.value.off_dac1,
-                        msg.value.value.relative_gain,
+                        msg.value.value.rf_gain if msg.value.value.rf_gain else 0,
+                        msg.value.value.cf_value if msg.value.value.cf_value else 0,
+                        msg.value.value.ecg_gain if msg.value.value.ecg_gain else 0,
+                        msg.value.value.ioffdac_range
+                        if msg.value.value.ioffdac_range
+                        else 0,
+                        msg.value.value.led1 if msg.value.value.led1 else 0,
+                        msg.value.value.led4 if msg.value.value.led4 else 0,
+                        msg.value.value.off_dac1 if msg.value.value.off_dac1 else 0,
+                        msg.value.value.relative_gain
+                        if msg.value.value.relative_gain
+                        else 0,
                         msg.value.value.led2,
                         msg.value.value.led3,
                         msg.value.value.off_dac2,
