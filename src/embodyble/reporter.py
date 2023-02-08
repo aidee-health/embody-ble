@@ -54,7 +54,7 @@ class EmbodyReporter:
     def stop_imu_reporting(self) -> None:
         self.__send_reset_reporting(attributes.ImuAttribute.attribute_id)
 
-    def start_belt_on_body_reporting(self, int_millis: int) -> None:
+    def start_belt_on_body_reporting(self, int_millis: int = 0) -> None:
         self.__send_configure_reporting(
             attributes.BeltOnBodyStateAttribute.attribute_id, int_millis
         )
@@ -80,7 +80,7 @@ class EmbodyReporter:
             attributes.HeartRateVariabilityAttribute.attribute_id
         )
 
-    def start_heart_rate_reporting(self, int_millis: int) -> None:
+    def start_heart_rate_reporting(self, int_millis: int = 0) -> None:
         self.__send_configure_reporting(
             attributes.HeartrateAttribute.attribute_id, int_millis
         )
@@ -88,7 +88,7 @@ class EmbodyReporter:
     def stop_heart_rate_reporting(self) -> None:
         self.__send_reset_reporting(attributes.HeartrateAttribute.attribute_id)
 
-    def start_heart_rate_interval_reporting(self, int_millis: int) -> None:
+    def start_heart_rate_interval_reporting(self, int_millis: int = 0) -> None:
         self.__send_configure_reporting(
             attributes.HeartRateIntervalAttribute.attribute_id, int_millis
         )
@@ -96,7 +96,7 @@ class EmbodyReporter:
     def stop_heart_rate_interval_reporting(self) -> None:
         self.__send_reset_reporting(attributes.HeartRateIntervalAttribute.attribute_id)
 
-    def start_charge_state_reporting(self, int_seconds: int) -> None:
+    def start_charge_state_reporting(self, int_seconds: int = 0) -> None:
         self.__send_configure_reporting(
             attributes.ChargeStateAttribute.attribute_id, int_seconds
         )
@@ -104,7 +104,7 @@ class EmbodyReporter:
     def stop_charge_state_reporting(self) -> None:
         self.__send_reset_reporting(attributes.ChargeStateAttribute.attribute_id)
 
-    def start_sleep_mode_reporting(self, int_seconds: int) -> None:
+    def start_sleep_mode_reporting(self, int_seconds: int = 0) -> None:
         self.__send_configure_reporting(
             attributes.SleepModeAttribute.attribute_id, int_seconds
         )
@@ -189,19 +189,44 @@ class EmbodyReporter:
 
     def start_ecg_ppg_reporting(self, int_millis: int) -> None:
         self.__send_configure_reporting(
-            attributes.PulseRawAllAttribute.attribute_id, int_millis
+            attributes.PulseRawAllAttribute.attribute_id, int_millis, 0x03
         )
 
     def stop_ecg_ppg_reporting(self) -> None:
         self.__send_reset_reporting(attributes.PulseRawAttribute.attribute_id)
         self.__send_reset_reporting(attributes.PulseRawAllAttribute.attribute_id)
 
-    def __send_configure_reporting(self, attribute_id: int, interval: int) -> None:
+    def stop_all_reporting(self) -> None:
+        self.stop_acc_reporting()
+        self.stop_afe_settings_reporting()
+        self.stop_battery_level_reporting()
+        self.stop_belt_on_body_reporting()
+        self.stop_breath_rate_reporting()
+        self.stop_charge_state_reporting()
+        self.stop_diagnostics_reporting()
+        self.stop_ecg_ppg_reporting()
+        self.stop_firmware_update_reporting()
+        self.stop_gyro_reporting()
+        self.stop_heart_rate_interval_reporting()
+        self.stop_heart_rate_interval_reporting()
+        self.stop_heart_rate_reporting()
+        self.stop_heart_rate_variability_reporting()
+        self.stop_imu_raw_reporting()
+        self.stop_imu_reporting()
+        self.stop_leds_reporting()
+        self.stop_recording_reporting()
+        self.stop_sleep_mode_reporting()
+        self.stop_temperature_reporting()
+
+    def __send_configure_reporting(
+        self, attribute_id: int, interval: int, reporting_mode: int = 0x01
+    ) -> None:
         self.__embody_ble.send(
             codec.ConfigureReporting(
-                attribute_id, types.Reporting(interval=interval, on_change=0x01)
+                attribute_id,
+                types.Reporting(interval=interval, on_change=reporting_mode),
             )
         )
 
     def __send_reset_reporting(self, attribute_id: int) -> None:
-        self.__embody_ble.send(codec.ResetReporting(attribute_id).encode())
+        self.__embody_ble.send(codec.ResetReporting(attribute_id))

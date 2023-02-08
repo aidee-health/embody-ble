@@ -73,8 +73,8 @@ class AttributeChangedListener:
         led3_blinking: bool,
     ) -> None:
         logging.info(
-            f"LEDs changed: L1={led1}, L1_blink={led1_blinking}, L2={led2}, \
-            L2_blink={led2_blinking}, L3={led3}, L3_blink={led3_blinking}"
+            f"LEDs changed: L1={led1}, L1_blink={led1_blinking}, L2={led2}, "
+            "L2_blink={led2_blinking}, L3={led3}, L3_blink={led3_blinking}"
         )
 
     def on_firmware_update_changed(self, firmware_update: int) -> None:
@@ -92,9 +92,9 @@ class AttributeChangedListener:
         avg_voltage: int,
     ) -> None:
         logging.info(
-            f"Diagnostics changed: rep_soc={rep_soc}, avg_current={avg_current}\
-                , rep_cap={rep_cap}, full_cap={full_cap}, tte={tte}, ttf={ttf}, \
-                voltage={voltage}, avg_voltage={avg_voltage}"
+            f"Diagnostics changed: rep_soc={rep_soc}, avg_current={avg_current}, "
+            "rep_cap={rep_cap}, full_cap={full_cap}, tte={tte}, ttf={ttf}, "
+            "voltage={voltage}, avg_voltage={avg_voltage}"
         )
 
     def on_afe_settings_changed(
@@ -113,9 +113,9 @@ class AttributeChangedListener:
         off_dac3: Optional[int],
     ) -> None:
         logging.info(
-            f"AFE settings changed: rf_gain={rf_gain}, cf_value={cf_value}, ecg_gain={ecg_gain}, \
-                ioffdac_range={ioffdac_range}, led1={led1}, led2={led2}, led3={led3}, led4={led4},\
-                    off_dac1={off_dac1}, off_dac2={off_dac2}, off_dac3={off_dac3}, relative_gain={relative_gain}"
+            f"AFE settings changed: rf_gain={rf_gain}, cf_value={cf_value}, ecg_gain={ecg_gain}, "
+            "ioffdac_range={ioffdac_range}, led1={led1}, led2={led2}, led3={led3}, led4={led4}, "
+            "off_dac1={off_dac1}, off_dac2={off_dac2}, off_dac3={off_dac3}, relative_gain={relative_gain}"
         )
 
     def on_ecgs_ppgs_changed(self, ecgs: list[int], ppgs: list[int]) -> None:
@@ -144,8 +144,8 @@ class AttributeChangedMessageListener(MessageListener):
             elif isinstance(msg.value, attributes.ImuAttribute):
                 for listener in self.__message_listeners:
                     listener.on_imu_changed(
-                        msg.value.orientation_and_activity & 0xF0,
-                        msg.value.activity_level & 0x0F,
+                        msg.value.value.orientation_and_activity & 0xF0,
+                        msg.value.value.orientation_and_activity & 0x0F,
                     )
             elif isinstance(msg.value, attributes.BeltOnBodyStateAttribute):
                 for listener in self.__message_listeners:
@@ -171,38 +171,42 @@ class AttributeChangedMessageListener(MessageListener):
             elif isinstance(msg.value, attributes.ImuRawAttribute):
                 for listener in self.__message_listeners:
                     listener.on_imu_raw_changed(
-                        msg.value.acc_x,
-                        msg.value.acc_y,
-                        msg.value.acc_z,
-                        msg.value.gyr_x,
-                        msg.value.gyr_y,
-                        msg.value.gyr_z,
+                        msg.value.value.acc_x,
+                        msg.value.value.acc_y,
+                        msg.value.value.acc_z,
+                        msg.value.value.gyr_x,
+                        msg.value.value.gyr_y,
+                        msg.value.value.gyr_z,
                     )
             elif isinstance(msg.value, attributes.AccRawAttribute):
                 for listener in self.__message_listeners:
                     listener.on_acc_changed(
-                        msg.value.acc_x, msg.value.acc_y, msg.value.acc_z
+                        msg.value.value.acc_x,
+                        msg.value.value.acc_y,
+                        msg.value.value.acc_z,
                     )
             elif isinstance(msg.value, attributes.GyroRawAttribute):
                 for listener in self.__message_listeners:
                     listener.on_gyr_changed(
-                        msg.value.gyr_x, msg.value.gyr_y, msg.value.gyr_z
+                        msg.value.value.gyr_x,
+                        msg.value.value.gyr_y,
+                        msg.value.value.gyr_z,
                     )
             elif isinstance(msg.value, attributes.MeasurementDeactivatedAttribute):
                 for listener in self.__message_listeners:
-                    listener.on_recording_changed(msg.value.value != 0)
+                    listener.on_recording_changed(msg.value.value > 0)
             elif isinstance(msg.value, attributes.TemperatureAttribute):
                 for listener in self.__message_listeners:
-                    listener.on_temperature_changed(msg.value.value)
+                    listener.on_temperature_changed(msg.value.temp_celsius())
             elif isinstance(msg.value, attributes.LedsAttribute):
                 for listener in self.__message_listeners:
                     listener.on_leds_changed(
-                        msg.value.led1,
-                        msg.value.led1_blinking,
-                        msg.value.led2,
-                        msg.value.led2_blinking,
-                        msg.value.led3,
-                        msg.value.led3_blinking,
+                        msg.value.value.led1,
+                        msg.value.value.led1_blinking,
+                        msg.value.value.led2,
+                        msg.value.value.led2_blinking,
+                        msg.value.value.led3,
+                        msg.value.value.led3_blinking,
                     )
             elif isinstance(msg.value, attributes.FirmwareUpdateProgressAttribute):
                 for listener in self.__message_listeners:
@@ -210,57 +214,65 @@ class AttributeChangedMessageListener(MessageListener):
             elif isinstance(msg.value, attributes.DiagnosticsAttribute):
                 for listener in self.__message_listeners:
                     listener.on_diagnostics_changed(
-                        msg.value.rep_soc,
-                        msg.value.avg_current,
-                        msg.value.rep_cap,
-                        msg.value.full_cap,
-                        msg.value.tte,
-                        msg.value.ttf,
-                        msg.value.voltage,
-                        msg.value.avg_voltage,
+                        msg.value.value.rep_soc,
+                        msg.value.value.avg_current,
+                        msg.value.value.rep_cap,
+                        msg.value.value.full_cap,
+                        msg.value.value.tte,
+                        msg.value.value.ttf,
+                        msg.value.value.voltage,
+                        msg.value.value.avg_voltage,
                     )
             elif isinstance(msg.value, attributes.AfeSettingsAttribute):
                 for listener in self.__message_listeners:
                     listener.on_afe_settings_changed(
-                        msg.value.rf_gain,
-                        msg.value.cf_value,
-                        msg.value.ecg_gain,
-                        msg.value.ioffdac_range,
-                        msg.value.led1,
-                        msg.value.led4,
-                        msg.value.off_dac,
-                        msg.value.relative_gain,
+                        msg.value.value.rf_gain,
+                        msg.value.value.cf_value,
+                        msg.value.value.ecg_gain,
+                        msg.value.value.ioffdac_range,
+                        msg.value.value.led1,
+                        msg.value.value.led4,
+                        msg.value.value.off_dac,
+                        msg.value.value.relative_gain,
                     )
             elif isinstance(msg.value, attributes.AfeSettingsAllAttribute):
                 for listener in self.__message_listeners:
                     listener.on_afe_settings_changed(
-                        msg.value.rf_gain,
-                        msg.value.cf_value,
-                        msg.value.ecg_gain,
-                        msg.value.ioffdac_range,
-                        msg.value.led1,
-                        msg.value.led4,
-                        msg.value.off_dac1,
-                        msg.value.relative_gain,
-                        msg.value.led2,
-                        msg.value.led3,
-                        msg.value.off_dac2,
-                        msg.value.off_dac3,
+                        msg.value.value.rf_gain,
+                        msg.value.value.cf_value,
+                        msg.value.value.ecg_gain,
+                        msg.value.value.ioffdac_range,
+                        msg.value.value.led1,
+                        msg.value.value.led4,
+                        msg.value.value.off_dac1,
+                        msg.value.value.relative_gain,
+                        msg.value.value.led2,
+                        msg.value.value.led3,
+                        msg.value.value.off_dac2,
+                        msg.value.value.off_dac3,
                     )
             else:
                 logging.warning("Unhandled attribute changed message: %s", msg)
         elif isinstance(msg, codec.RawPulseChanged):
             if isinstance(msg.value, attributes.PulseRawAttribute):
                 for listener in self.__message_listeners:
-                    listener.on_raw_pulse_changed([msg.value.ecg], [msg.value.ppg])
+                    listener.on_ecgs_ppgs_changed(
+                        [msg.value.value.ecg], [msg.value.value.ppg]
+                    )
             elif isinstance(msg.value, attributes.PulseRawAllAttribute):
                 for listener in self.__message_listeners:
-                    listener.on_raw_pulse_changed(
+                    listener.on_ecgs_ppgs_changed(
                         [msg.value.ecg],
-                        [msg.value.ppg_green, msg.value.ppg_red, msg.value.ppg_ir],
+                        [
+                            msg.value.value.ppg_green,
+                            msg.value.value.ppg_red,
+                            msg.value.value.ppg_ir,
+                        ],
                     )
         elif isinstance(msg, codec.RawPulseListChanged):
             for listener in self.__message_listeners:
-                listener.on_raw_pulse_changed(msg.value.ecgs, msg.value.ppgs)
+                listener.on_ecgs_ppgs_changed(
+                    msg.value.value.ecgs, msg.value.value.ppgs
+                )
         else:
             logging.warning("Unhandled message: %s", msg)

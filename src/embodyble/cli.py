@@ -34,7 +34,8 @@ report_attributes: list[str] = [
     "imu",
     "heart_rate",
     "belt_on_body",
-    "temperature" "heart_rate_variability",
+    "temperature",
+    "heart_rate_variability",
     "heart_rate_interval",
     "charge_state",
     "sleep_mode",
@@ -68,47 +69,50 @@ def main(args=None):
     try:
         if parsed_args.get:
             print(f"{getattr(send_helper, get_attributes_dict.get(parsed_args.get))()}")
-            exit(0)
+            return
         elif parsed_args.get_all:
             __get_all_attributes(send_helper)
-            exit(0)
+            return
         elif parsed_args.set_time:
             print(f"Set current time: {send_helper.set_current_timestamp()}")
             print(f"New current time is: {send_helper.get_current_time()}")
-            exit(0)
+            return
         elif parsed_args.set_trace_level:
             print(
                 f"Trace level set: {send_helper.set_trace_level(parsed_args.set_trace_level)}"
             )
-            exit(0)
+            return
         elif parsed_args.list_files:
             __list_files(send_helper)
-            exit(0)
+            return
         elif parsed_args.delete_file:
             print(
                 f"Delete file {parsed_args.delete_file}:"
                 f" {send_helper.delete_file(file_name=parsed_args.delete_file)}"
             )
-            exit(0)
+            return
         elif parsed_args.delete_files:
             print(f"Delete files: {send_helper.delete_all_files()}")
-            exit(0)
+            return
         elif parsed_args.reformat_disk:
             print(f"Reformatting disk: {send_helper.reformat_disk()}")
-            exit(0)
+            return
         elif parsed_args.reset:
             print(f"Resetting device: {send_helper.reset_device()}")
-            exit(0)
+            return
         elif parsed_args.reboot:
             print(f"Rebooting device: {send_helper.reboot_device()}")
-            exit(0)
+            return
         elif parsed_args.report_attribute:
             attr_changed_listener = AttributeChangedListener()
             reporter = EmbodyReporter(embody_ble, attr_changed_listener)
-            getattr(reporter, f"start_{parsed_args.report_attribute}_reporting")(5)
+            # invoke the start_<report_attribute>_reporting method dynamically
+            getattr(reporter, f"start_{parsed_args.report_attribute}_reporting")(
+                parsed_args.report_interval
+            )
             time.sleep(30)
-            getattr(reporter, f"stop_{parsed_args.report_attribute}_reporting")()
-            exit(0)
+            reporter.stop_all_reporting()
+            return
     finally:
         embody_ble.shutdown()
 
@@ -188,9 +192,12 @@ def __get_parser():
     )
     parser.add_argument(
         "--report-attribute",
-        help="Report selected attribute",
+        help="Report selected attribute for 30 seconds (adjust interval with --report-interval)",
         choices=report_attributes,
         default=None,
+    )
+    parser.add_argument(
+        "--report-interval", help="Set report interval", type=int, default=5
     )
 
     parser.add_argument(
