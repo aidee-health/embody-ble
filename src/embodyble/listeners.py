@@ -38,19 +38,3 @@ class ConnectionListener(ABC):
     def on_connected(self, connected: bool) -> None:
         """Process connection status."""
         pass
-
-
-class AttributeChangedMessageListener:
-    """Listener class for being notified of attributed changed messages."""
-
-    def __init__(self, attribute_id: int):
-        self.attribute_id = attribute_id
-        self.data_list = [int]
-
-    def message_received(self, msg: codec.Message) -> None:
-        """Process received message"""
-        if isinstance(msg, codec.AttributeChanged):
-            self.data_list.append(msg.value.value)
-
-    def get_data_list(self):
-        return self.data_list
