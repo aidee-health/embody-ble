@@ -10,9 +10,9 @@ import time
 from embodyserial.helpers import EmbodySendHelper
 
 from . import __version__
-from .attrlistener import AttributeChangedListener
 from .embodyble import EmbodyBle
-from .reporter import EmbodyReporter
+from .reporting import AttributeChangedListener
+from .reporting import EmbodyReporter
 
 
 get_attributes_dict: dict[str, str] = {

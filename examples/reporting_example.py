@@ -6,9 +6,9 @@ Run the example with `poetry run python examples/reporting_example.py`.
 import logging
 import time
 
-from embodyble.attrlistener import AttributeChangedListener
 from embodyble.embodyble import EmbodyBle
-from embodyble.reporter import EmbodyReporter
+from embodyble.reporting import AttributeChangedListener
+from embodyble.reporting import EmbodyReporter
 
 
 if __name__ == "__main__":
@@ -26,6 +26,6 @@ if __name__ == "__main__":
     embody_ble = EmbodyBle()
     reporter = EmbodyReporter(embody_ble, BatteryChangeListener())
     embody_ble.connect()
-    reporter.start_battery_level_reporting(int_seconds=1)
+    reporter.start_battery_level_reporting(int_seconds=2)
     time.sleep(30)
     reporter.stop_all_reporting()
