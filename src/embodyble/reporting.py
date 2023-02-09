@@ -465,7 +465,7 @@ class EmbodyReporter:
 
     def start_ecg_ppg_reporting(self, int_millis: int) -> None:
         self.__send_configure_reporting(
-            attributes.PulseRawAllAttribute.attribute_id, int_millis, 0x03
+            attributes.PulseRawAllAttribute.attribute_id, int_millis
         )
 
     def stop_ecg_ppg_reporting(self) -> None:
