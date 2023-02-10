@@ -231,14 +231,14 @@ class _MessageReader:
             logging.warning(f"Receive error during incoming message: {e}")
 
     def on_ble_message_received(
-        self, uuid: BleakGATTCharacteristic, data: bytearray
+        self, uuid: BleakGATTCharacteristic, data: bytes
     ) -> None:
         """Callback invoked when a new BLE message is received.
 
         This is invoked by the BLE message listener.
         """
-        logging.debug(f"Received BLE message for uuid {uuid}: {bytes(data).hex()}")
-        self.__handle_ble_message(uuid=uuid.handle, data=bytes(data))
+        logging.debug(f"Received BLE message for uuid {uuid}: {data.hex()}")
+        self.__handle_ble_message(uuid=uuid.handle, data=data)
 
     def __handle_incoming_message(self, msg: codec.Message) -> None:
         if msg.msg_type < 0x80:
@@ -294,8 +294,8 @@ class _MessageReader:
     def add_response_message_listener(self, listener: ResponseMessageListener) -> None:
         self.__response_message_listeners.append(listener)
 
-    def __handle_ble_message(self, uuid: int, data: list[int]) -> None:
-        logging.debug(f"Handling new BLE message. UUID: {uuid}")
+    def __handle_ble_message(self, uuid: int, data: bytes) -> None:
+        logging.debug(f"Handling new BLE message. UUID: {uuid}, data: {data.hex()}")
         if len(self.__ble_message_listeners) == 0:
             return
         for listener in self.__ble_message_listeners:
@@ -305,7 +305,7 @@ class _MessageReader:
 
     @staticmethod
     def __notify_ble_message_listener(
-        listener: BleMessageListener, uuid: int, data: list[int]
+        listener: BleMessageListener, uuid: int, data: bytes
     ) -> None:
         try:
             listener.ble_message_received(uuid, data)

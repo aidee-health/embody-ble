@@ -4,7 +4,6 @@ from abc import ABC
 from abc import abstractmethod
 
 from embodycodec import codec
-from pc_ble_driver_py.ble_driver import BLEUUID
 
 
 class MessageListener(ABC):
@@ -19,7 +18,7 @@ class BleMessageListener(ABC):
     """Listener interface for being notified of incoming BLE messages."""
 
     @abstractmethod
-    def ble_message_received(self, uuid: BLEUUID, data: list[int]) -> None:
+    def ble_message_received(self, uuid: int, data: bytes) -> None:
         """Process received message"""
 
 
