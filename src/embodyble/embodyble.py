@@ -3,7 +3,7 @@
 Allows for both sending messages synchronously and asynchronously,
 receiving response messages and subscribing for incoming messages from the device.
 """
-import concurrent.futures
+import asyncio
 import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -11,6 +11,9 @@ from typing import Optional
 
 import serial
 import serial.tools.list_ports
+from bleak import BleakClient
+from bleak import BleakGATTCharacteristic
+from bleak import BleakScanner
 from embodycodec import attributes
 from embodycodec import codec
 from embodyserial import embodyserial
@@ -27,20 +30,7 @@ UART_TX_CHAR_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
 EMBODY_NAME_PREFIXES = ["G3_", "EMB"]
 
-from bleak import BleakClient
-from bleak import BleakScanner
-
-
-# device = BleakScanner.find_device_by_name("G3_000000") # evt by_filter:
-# device = await BleakScanner.find_device_by_filter(
-#        lambda d, ad: d.name and d.name.lower() == wanted_name.lower()
-#    )
-# if not device:
-#        raise BleakError(f"A device with address {ble_address} could not be found.")
-# client = BleakClient(device)
-# await client.connect()
-# model_number = await client.read_gatt_char(MODEL_NBR_UUID)
-#
+asyncio_loop = asyncio.get_event_loop()
 
 
 class EmbodyBle(embodyserial.EmbodySender):
@@ -52,6 +42,8 @@ class EmbodyBle(embodyserial.EmbodySender):
     as well as standard BLE messages sending/receiving. Different callback interfaces
     (listeners) are used to be notified of incoming EmBody messages (MessageListener) and
     incoming BLE messages (BleMessageListener).
+
+    Separate connect method, since it supports reconnecting to a device as well.
     """
 
     def __init__(
@@ -60,50 +52,63 @@ class EmbodyBle(embodyserial.EmbodySender):
         ble_msg_listener: Optional[BleMessageListener] = None,
     ) -> None:
         super().__init__()
-        self.__device_name: Optional[str] = None
-        self.__candidate_client_list: set[str] = set()
         self.__client: Optional[BleakClient] = None
-        self.__reader = _MessageReader()
-        if msg_listener:
-            self.__reader.add_message_listener(msg_listener)
-        if ble_msg_listener:
-            self.__reader.add_ble_message_listener(ble_msg_listener)
+        self.__reader: Optional[_MessageReader] = None
+        self.__sender: Optional[_MessageSender] = None
+        self.__message_listener = msg_listener
+        self.__ble_message_listener = ble_msg_listener
 
-    async def connect(self, device_name: Optional[str] = None) -> None:
+    def connect(self, device_name: Optional[str] = None) -> None:
+        return asyncio_loop.run_until_complete(self.async_connect(device_name))
+
+    async def async_connect(self, device_name: Optional[str] = None) -> None:
         """Connect to specified device (or use device name from serial port as default)."""
-        if device_name:
-            self.__device_name = device_name
-        else:
+        if self.__connected() and self.__client:
+            await self.__client.disconnect()
+        if self.__reader:
+            self.__reader.stop()
+        if not device_name:
             self.__device_name = self.__find_name_from_serial_port()
         logging.info(f"Using EmBody device name: {self.__device_name}")
-        device = BleakScanner.find_device_by_name(self.__device_name)
+        device = await BleakScanner.find_device_by_filter(
+            lambda d, ad: d.name and d.name.lower() == self.__device_name.lower()
+        )
         if not device:
             raise EmbodyBleError(
                 f"Could not find device with name {self.__device_name}"
             )
-        self.__client = BleakClient(device, disconnected_callback=self.on_disconnected)
-        await self.__client.connect(device)
-        self.__sender = _MessageSender(
-            ble_adapter=self.__ble_adapter, ble_conn_handle=self.__ble_conn_handle
-        )
+        self.__client = BleakClient(device, self.on_disconnected)
+        await self.__client.connect()
+        self.__reader = _MessageReader(self.__client)
+        if self.__message_listener:
+            self.__reader.add_message_listener(self.__message_listener)
+        if self.__ble_message_listener:
+            self.__reader.add_ble_message_listener(self.__ble_message_listener)
+        self.__sender = _MessageSender(self.__client)
         self.__reader.add_response_message_listener(self.__sender)
+        await self.__client.start_notify(
+            UART_TX_CHAR_UUID, self.__reader.on_uart_tx_data
+        )
 
     def shutdown(self) -> None:
         """Shutdown after use."""
-        self.__sender.shutdown()
-        self.__reader.stop()
-
-    def send_async(self, msg: codec.Message) -> None:
-        self.__sender.send_message(msg)
+        self.__sender = None
+        if self.__reader:
+            self.__reader.stop()
+            self.__reader = None
 
     def send(
         self, msg: codec.Message, timeout: Optional[int] = 30
     ) -> Optional[codec.Message]:
-        return self.__sender.send_message_and_wait_for_response(msg, timeout)
+        if not self.__sender:
+            raise EmbodyBleError("Sender not initialized")
+        return asyncio_loop.run_until_complete(
+            self.__sender.send_async(msg, True, timeout)
+        )
 
     def __connected(self) -> bool:
         """Check whether BLE is connected (active handle)"""
-        return self.__client and self.__client.is_connected
+        return self.__client is not None and self.__client.is_connected
 
     def on_disconnected(self, client: BleakClient) -> None:
         """Invoked by bleak when disconnected."""
@@ -128,13 +133,16 @@ class EmbodyBle(embodyserial.EmbodySender):
         return device_name
 
     def add_message_listener(self, listener: MessageListener) -> None:
-        self.__reader.add_message_listener(listener)
+        if self.__reader:
+            self.__reader.add_message_listener(listener)
 
     def add_ble_message_listener(self, listener: BleMessageListener) -> None:
-        self.__reader.add_ble_message_listener(listener)
+        if self.__reader:
+            self.__reader.add_ble_message_listener(listener)
 
     def add_response_message_listener(self, listener: ResponseMessageListener) -> None:
-        self.__reader.add_response_message_listener(listener)
+        if self.__reader:
+            self.__reader.add_response_message_listener(listener)
 
 
 class _MessageSender(ResponseMessageListener):
@@ -148,12 +156,6 @@ class _MessageSender(ResponseMessageListener):
         self.__send_lock = threading.Lock()
         self.__response_event = threading.Event()
         self.__current_response_message: Optional[codec.Message] = None
-        self.__send_executor = ThreadPoolExecutor(
-            max_workers=1, thread_name_prefix="send-worker"
-        )
-
-    def shutdown(self) -> None:
-        self.__send_executor.shutdown(wait=False, cancel_futures=False)
 
     def response_message_received(self, msg: codec.Message) -> None:
         """Invoked when response message is received by Message reader.
@@ -164,29 +166,11 @@ class _MessageSender(ResponseMessageListener):
         self.__current_response_message = msg
         self.__response_event.set()
 
-    def send_message(self, msg: codec.Message) -> None:
-        self.__send_async(msg, False)
-
-    def send_message_and_wait_for_response(
-        self, msg: codec.Message, timeout: Optional[int] = 10
-    ) -> Optional[codec.Message]:
-        future = self.__send_async(msg, True)
-        try:
-            return future.result(timeout)
-        except TimeoutError:
-            logging.warning(
-                f"No response received for message within timeout: {msg}",
-                exc_info=False,
-            )
-            return None
-
-    def __send_async(
-        self, msg: codec.Message, wait_for_response: bool = True
-    ) -> concurrent.futures.Future[Optional[codec.Message]]:
-        return self.__send_executor.submit(self.__do_send, msg, wait_for_response)
-
-    async def __do_send(
-        self, msg: codec.Message, wait_for_response: bool = True
+    async def send_async(
+        self,
+        msg: codec.Message,
+        wait_for_response: bool = True,
+        timeout: Optional[int] = 10,
     ) -> Optional[codec.Message]:
         with self.__send_lock:
             logging.debug(f"Sending message: {msg}, encoded: {msg.encode().hex()}")
@@ -199,7 +183,7 @@ class _MessageSender(ResponseMessageListener):
                 logging.warning(f"Error sending message: {str(e)}", exc_info=False)
                 return None
             if wait_for_response:
-                if self.__response_event.wait(30):
+                if self.__response_event.wait(timeout if timeout else 10):
                     return self.__current_response_message
             return None
 
@@ -217,10 +201,12 @@ class _MessageReader:
         self.__response_message_listener_executor = ThreadPoolExecutor(
             max_workers=1, thread_name_prefix="rsp-worker"
         )
+        self.__ble_message_listener_executor = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="ble-msg-worker"
+        )
         self.__message_listeners: list[MessageListener] = []
         self.__ble_message_listeners: list[BleMessageListener] = []
         self.__response_message_listeners: list[ResponseMessageListener] = []
-        self.__client.start_notify(UART_TX_CHAR_UUID, self.__on_uart_tx_data)
 
     def stop(self) -> None:
         self.__message_listener_executor.shutdown(wait=False, cancel_futures=False)
@@ -228,31 +214,31 @@ class _MessageReader:
             wait=False, cancel_futures=False
         )
 
-    def on_uart_tx_data(self, sender: int, data: bytes) -> None:
+    def on_uart_tx_data(self, _: BleakGATTCharacteristic, data: bytearray) -> None:
         """Callback invoked by bleak when a new notification is received.
 
         New messages, both custom codec messages and BLE messages are received here.
         """
-        logging.debug(f"New incoming data UART TX data: {data.hex()}")
+        logging.debug(f"New incoming data UART TX data: {bytes(data).hex()}")
         try:
             pos = 0
             while pos < len(data):
-                msg = codec.decode(data[pos:])
+                msg = codec.decode(bytes(data[pos:]))
                 logging.debug(f"Decoded message: {msg}")
                 self.__handle_incoming_message(msg)
                 pos += msg.length
         except Exception as e:
             logging.warning(f"Receive error during incoming message: {e}")
 
-    def on_ble_message_received(self, uuid: int, data: bytes) -> None:
+    def on_ble_message_received(
+        self, uuid: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         """Callback invoked when a new BLE message is received.
 
         This is invoked by the BLE message listener.
         """
-        logging.debug(
-            f"Received BLE message for uuid {uuid.to_bytes(16).hex()}: {data.hex()}"
-        )
-        self.__handle_ble_message(uuid=uuid, data=data)
+        logging.debug(f"Received BLE message for uuid {uuid}: {bytes(data).hex()}")
+        self.__handle_ble_message(uuid=uuid.handle, data=bytes(data))
 
     def __handle_incoming_message(self, msg: codec.Message) -> None:
         if msg.msg_type < 0x80:
@@ -261,7 +247,7 @@ class _MessageReader:
             self.__handle_response_message(msg)
 
     def __handle_message(self, msg: codec.Message) -> None:
-        logging.debug(f"Handling new message: {msg}")
+        logging.debug(f"Handling new incoming message: {msg}")
         if len(self.__message_listeners) == 0:
             return
         for listener in self.__message_listeners:
