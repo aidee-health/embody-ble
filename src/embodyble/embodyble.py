@@ -29,12 +29,6 @@ UART_TX_CHAR_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 EMBODY_NAME_PREFIXES = ["G3_", "EMB"]
 
 
-def start_background_loop(loop: asyncio.AbstractEventLoop) -> None:
-    """https://gist.github.com/dmfigol/3e7d5b84a16d076df02baa9f53271058."""
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
-
-
 class EmbodyBle(embodyserial.EmbodySender):
     """Main class for setting up BLE communication with an EmBody device.
 
@@ -48,7 +42,7 @@ class EmbodyBle(embodyserial.EmbodySender):
     Separate connect method, since it supports reconnecting to a device as well.
 
     Note that a new thread is created for each instance of this class, to run an asyncio
-    event loop.
+    event loop. Invoke the shutdown method to stop the thread.
     """
 
     def __init__(
@@ -67,8 +61,15 @@ class EmbodyBle(embodyserial.EmbodySender):
         if ble_msg_listener:
             self.__ble_message_listeners.append(ble_msg_listener)
         self.__loop = asyncio.new_event_loop()
-        t = Thread(target=start_background_loop, args=(self.__loop,), daemon=True)
+        t = Thread(
+            target=self.__start_background_loop, args=(self.__loop,), daemon=True
+        )
         t.start()
+
+    def __start_background_loop(self, loop: asyncio.AbstractEventLoop) -> None:
+        """Runs an asyncio event loop in a background thread."""
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
 
     def connect(self, device_name: Optional[str] = None) -> None:
         asyncio.run_coroutine_threadsafe(
