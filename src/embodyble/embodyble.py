@@ -252,7 +252,7 @@ class _MessageReader:
             pos = 0
             while pos < len(data):
                 msg = codec.decode(bytes(data[pos:]))
-                logging.info(f"Decoded incoming UART message: {msg}")
+                logging.debug(f"Decoded incoming UART message: {msg}")
                 self.__handle_incoming_message(msg)
                 pos += msg.length
         except Exception as e:
