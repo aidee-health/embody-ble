@@ -550,7 +550,7 @@ class EmbodyReporter:
 
     def read_ble_battery_level(self) -> str:
         battery_level = self.__embody_ble.request_ble_attribute(BATTERY_LEVEL_UUID)
-        return int.from_bytes(battery_level)
+        return int.from_bytes(battery_level, byteorder="big")
 
     def read_ble_current_time(self) -> datetime:
         current_time = self.__embody_ble.request_ble_attribute(CURRENT_TIME_UUID)

@@ -367,7 +367,7 @@ class _MessageReader:
 
     @staticmethod
     def __notify_ble_message_listener(
-        listener: BleMessageListener, uuid: int, data: bytes
+        listener: BleMessageListener, uuid: str, data: bytes
     ) -> None:
         try:
             listener.ble_message_received(uuid, data)
