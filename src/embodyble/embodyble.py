@@ -158,6 +158,21 @@ class EmbodyBle(embodyserial.EmbodySender):
         comm.shutdown()
         return device_name
 
+    def list_available_devices(self, timeout=3) -> list[str]:
+        """List available devices filtered by NUS service."""
+        return asyncio.run_coroutine_threadsafe(
+            self.__list_available_devices(timeout), self.__loop
+        ).result()
+
+    async def __list_available_devices(self, timeout=3) -> list[str]:
+        """List available devices filtered by NUS service."""
+        scanner = BleakScanner(service_uuids=[UART_SERVICE_UUID])
+        await scanner.start()
+        await asyncio.sleep(timeout)
+        await scanner.stop()
+        devices = scanner.discovered_devices
+        return [d.name for d in devices]
+
     def add_message_listener(self, listener: MessageListener) -> None:
         self.__message_listeners.append(listener)
 

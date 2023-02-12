@@ -64,9 +64,15 @@ def main(args=None):
         format="%(asctime)s:%(levelname)s:%(message)s",
     )
     embody_ble = EmbodyBle()
-    embody_ble.connect(parsed_args.device)
-    send_helper = EmbodySendHelper(sender=embody_ble)
     try:
+        if parsed_args.list_devices:
+            print("Available devices:")
+            for device in embody_ble.list_available_devices():
+                print(f"\t{device}")
+            return
+        embody_ble.connect(parsed_args.device)
+        send_helper = EmbodySendHelper(sender=embody_ble)
+
         if parsed_args.get:
             print(f"{getattr(send_helper, get_attributes_dict.get(parsed_args.get))()}")
             return
@@ -114,7 +120,8 @@ def main(args=None):
             reporter.stop_all_reporting()
             return
     finally:
-        embody_ble.shutdown()
+        if embody_ble:
+            embody_ble.shutdown()
 
 
 def __get_all_attributes(send_helper):
@@ -199,7 +206,12 @@ def __get_parser():
     parser.add_argument(
         "--report-interval", help="Set report interval", type=int, default=5
     )
-
+    parser.add_argument(
+        "--list-devices",
+        help="List all available devices",
+        action="store_true",
+        default=None,
+    )
     parser.add_argument(
         "--version",
         action="version",
