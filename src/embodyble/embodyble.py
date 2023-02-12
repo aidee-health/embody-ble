@@ -356,7 +356,7 @@ class _MessageReader:
         except Exception as e:
             logging.warning(f"Error notifying listener: {str(e)}", exc_info=True)
 
-    def __handle_ble_message(self, uuid: int, data: bytes) -> None:
+    def __handle_ble_message(self, uuid: str, data: bytes) -> None:
         logging.debug(f"Handling new BLE message. UUID: {uuid}, data: {data.hex()}")
         if len(self.__ble_message_listeners) == 0:
             return

@@ -548,7 +548,7 @@ class EmbodyReporter:
         software_revision = self.__embody_ble.request_ble_attribute(SOFTWARE_REV_UUID)
         return str(software_revision, "ascii")
 
-    def read_ble_battery_level(self) -> str:
+    def read_ble_battery_level(self) -> int:
         battery_level = self.__embody_ble.request_ble_attribute(BATTERY_LEVEL_UUID)
         return int.from_bytes(battery_level, byteorder="big")
 
