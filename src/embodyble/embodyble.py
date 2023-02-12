@@ -101,10 +101,6 @@ class EmbodyBle(embodyserial.EmbodySender):
         self.__reader = _MessageReader(
             self.__client, self.__message_listeners, self.__ble_message_listeners
         )
-        if self.__message_listeners:
-            self.__reader.add_message_listener(self.__message_listener)
-        if self.__ble_message_listeners:
-            self.__reader.add_ble_message_listener(self.__ble_message_listener)
         self.__sender = _MessageSender(self.__client)
         self.__reader.add_response_message_listener(self.__sender)
         await self.__client.start_notify(
