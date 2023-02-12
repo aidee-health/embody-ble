@@ -101,7 +101,7 @@ embody-ble --log-level INFO --report-attribute heart_rate --report-interval 1000
 ### Example - List all available EmBody devices
 
 ```shell
-embody-ble --list-candidates
+embody-ble --list-devices
 ```
 
 ### Example - List all attribute values
