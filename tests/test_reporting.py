@@ -37,7 +37,7 @@ def attribute_changed_message_listener(
 
 def test_attribute_changed_message_for_battery_level(
     attribute_changed_listener: BlockingQueueAttributeChangedListener,
-    attribute_changed_message_listener: AttributeChangedListener,
+    attribute_changed_message_listener: AttributeChangedMessageListener,
 ) -> None:
     """Test the attribute changed message for battery level."""
     attribute_changed_message_listener.message_received(
