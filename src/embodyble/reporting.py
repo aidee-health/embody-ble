@@ -1,6 +1,9 @@
 """This module provides a reporter wrapper along with a high level listener interface."""
 
 import logging
+import struct
+from datetime import datetime
+from datetime import timezone
 from typing import Optional
 
 from embodycodec import attributes
@@ -8,7 +11,20 @@ from embodycodec import codec
 from embodycodec import types
 
 from embodyble.embodyble import EmbodyBle
+from embodyble.listeners import BleMessageListener
 from embodyble.listeners import MessageListener
+
+
+SYSTEM_ID_UUID = "00002A23-0000-1000-8000-00805f9b34fb"
+MODEL_NBR_UUID = "00002A24-0000-1000-8000-00805f9b34fb"
+DEVICE_NAME_UUID = "00002A00-0000-1000-8000-00805f9b34fb"
+SERIAL_NO_UUID = "00002A25-0000-1000-8000-00805f9b34fb"
+FIRMWARE_REV_UUID = "00002A26-0000-1000-8000-00805f9b34fb"
+HARDWARE_REV_UUID = "00002A27-0000-1000-8000-00805f9b34fb"
+SOFTWARE_REV_UUID = "00002A28-0000-1000-8000-00805f9b34fb"
+MANUFACTURER_NAME_UUID = "00002A29-0000-1000-8000-00805f9b34fb"
+CURRENT_TIME_UUID = "00002A2B-0000-1000-8000-00805f9b34fb"
+BATTERY_LEVEL_UUID = "00002A19-0000-1000-8000-00805f9b34fb"
 
 
 class AttributeChangedListener:
@@ -124,7 +140,7 @@ class AttributeChangedListener:
         logging.info(f"ECGs and PPGs changed: ecgs={ecgs}, ppgs={ppgs}")
 
 
-class AttributeChangedMessageListener(MessageListener):
+class AttributeChangedMessageListener(MessageListener, BleMessageListener):
     """MessageListener implementation delegating to high level callback interface."""
 
     def __init__(
@@ -287,6 +303,12 @@ class AttributeChangedMessageListener(MessageListener):
         else:
             logging.warning("Unhandled message: %s", msg)
 
+    def ble_message_received(self, uuid: str, data: bytes) -> None:
+        """Process received message"""
+        if uuid == BATTERY_LEVEL_UUID:
+            for listener in self.__message_listeners:
+                listener.on_battery_level_changed(int(data))
+
 
 class EmbodyReporter:
     """Reporter class to configure embody reporting and a callback interface.
@@ -304,6 +326,9 @@ class EmbodyReporter:
             attr_changed_listener=attr_changed_listener
         )
         self.__embody_ble.add_message_listener(
+            self.__attribute_changed_message_listener
+        )
+        self.__embody_ble.add_ble_message_listener(
             self.__attribute_changed_message_listener
         )
 
@@ -506,3 +531,52 @@ class EmbodyReporter:
 
     def __send_reset_reporting(self, attribute_id: int) -> None:
         self.__embody_ble.send(codec.ResetReporting(attribute_id))
+
+    # BLE specific methods ###
+
+    def read_ble_manufacturer_name(self) -> str:
+        manufacturer_name = self.__embody_ble.request_ble_attribute(
+            MANUFACTURER_NAME_UUID
+        )
+        return str(manufacturer_name, "ascii")
+
+    def read_ble_serial_no(self) -> str:
+        serial_no = self.__embody_ble.request_ble_attribute(SERIAL_NO_UUID)
+        return str(serial_no, "ascii")
+
+    def read_ble_software_revision(self) -> str:
+        software_revision = self.__embody_ble.request_ble_attribute(SOFTWARE_REV_UUID)
+        return str(software_revision, "ascii")
+
+    def read_ble_battery_level(self) -> str:
+        battery_level = self.__embody_ble.request_ble_attribute(BATTERY_LEVEL_UUID)
+        return int.from_bytes(battery_level)
+
+    def read_ble_current_time(self) -> datetime:
+        current_time = self.__embody_ble.request_ble_attribute(CURRENT_TIME_UUID)
+        return convert_from_gatt_current_time(current_time)
+
+    def write_ble_current_time(self, timestamp: datetime) -> None:
+        self.__embody_ble.write_ble_attribute(
+            CURRENT_TIME_UUID, convert_to_gatt_current_time(timestamp)
+        )
+
+    def start_ble_battery_level_reporting(self) -> None:
+        self.__embody_ble.start_ble_notify(BATTERY_LEVEL_UUID)
+
+    def stop_ble_battery_level_reporting(self) -> None:
+        self.__embody_ble.stop_ble_notify(BATTERY_LEVEL_UUID)
+
+
+def convert_to_gatt_current_time(timestamp: datetime) -> bytes:
+    """Accessory function to convert a datetime object to a GATT current time byte array."""
+    dt = timestamp.astimezone(timezone.utc)
+    return struct.pack(
+        "<hbbbbb", dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second
+    )
+
+
+def convert_from_gatt_current_time(time_bytes: bytes) -> datetime:
+    """Accessory function to convert a GATT current time byte array to a datetime object."""
+    year, month, day, hour, minute, second = struct.unpack("<hbbbbb", time_bytes[0:7])
+    return datetime(year, month, day, hour, minute, second, tzinfo=timezone.utc)

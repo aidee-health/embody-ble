@@ -130,6 +130,13 @@ class EmbodyBle(embodyserial.EmbodySender):
             self.__sender.send_async(msg, True, timeout), self.__loop
         ).result()
 
+    def write_ble_attribute(self, uuid: str, data: bytes) -> None:
+        if not self.__client:
+            raise EmbodyBleError("BLE client not initialized")
+        return asyncio.run_coroutine_threadsafe(
+            self.__client.write_gatt_char(uuid, data), self.__loop
+        ).result()
+
     def request_ble_attribute(self, uuid: str) -> bytearray:
         if not self.__client:
             raise EmbodyBleError("BLE client not initialized")
@@ -304,7 +311,7 @@ class _MessageReader:
         This is invoked by the BLE message listener.
         """
         logging.debug(f"Received BLE message for uuid {uuid}: {data.hex()}")
-        self.__handle_ble_message(uuid=uuid.handle, data=data)
+        self.__handle_ble_message(uuid=uuid.uuid, data=data)
 
     def __handle_incoming_message(self, msg: codec.Message) -> None:
         if msg.msg_type < 0x80:
