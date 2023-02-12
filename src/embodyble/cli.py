@@ -64,7 +64,7 @@ def main(args=None):
         format="%(asctime)s:%(levelname)s:%(message)s",
     )
     embody_ble = EmbodyBle()
-    embody_ble.connect()
+    embody_ble.connect(parsed_args.device)
     send_helper = EmbodySendHelper(sender=embody_ble)
     try:
         if parsed_args.get:
@@ -156,7 +156,7 @@ def __get_parser():
         choices=log_levels,
         default="WARNING",
     )
-    parser.add_argument("--device", help="Serial port name", default=None)
+    parser.add_argument("--device", help="Bluetooth device name", default=None)
     parser.add_argument(
         "--get", help="Get attribute", choices=get_attributes_dict.keys(), default=None
     )

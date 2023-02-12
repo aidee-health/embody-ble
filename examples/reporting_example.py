@@ -24,8 +24,10 @@ if __name__ == "__main__":
             logging.info(f"Battery level changed to: {battery_level}%")
 
     embody_ble = EmbodyBle()
+    embody_ble.connect("G3_C360")
     reporter = EmbodyReporter(embody_ble, BatteryChangeListener())
-    embody_ble.connect()
     reporter.start_battery_level_reporting(int_seconds=2)
-    time.sleep(30)
+    time.sleep(20)
+    logging.info("Stop reporting")
     reporter.stop_all_reporting()
+    logging.info("Done")
