@@ -281,11 +281,17 @@ class _MessageReader:
 
     async def start_ble_notify(self, uuid: str) -> None:
         """Start notification on a given characteristic."""
-        await self.__client.start_notify(uuid, self.on_ble_message_received)
+        try:
+            await self.__client.start_notify(uuid, self.on_ble_message_received)
+        except ValueError:
+            return
 
     async def stop_ble_notify(self, uuid: str) -> None:
         """Stop notification on a given characteristic."""
-        await self.__client.stop_notify(uuid)
+        try:
+            await self.__client.stop_notify(uuid)
+        except ValueError:
+            return
 
     def on_uart_tx_data(self, _: BleakGATTCharacteristic, data: bytearray) -> None:
         """Callback invoked by bleak when a new notification is received.
