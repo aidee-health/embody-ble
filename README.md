@@ -19,7 +19,7 @@
 
 ## Features
 
-- Connects to an EmBody device over BLE (Bluetooth)
+- Connects to an EmBody device over BLE (Bluetooth) using [Bleak](https://github.com/hbldh/bleak)
 - Uses the EmBody protocol to communicate with the device
 - Integrates with [the EmBody Protocol Codec](https://github.com/aidee-health/embody-protocol-codec) project
 - Asynchronous send without having to wait for response
@@ -33,7 +33,7 @@
 
 ## Requirements
 
-- Python 3.9 (NOTE! Nordic's pc-ble-driver-py (and nrfutil) does not support 3.10 yet)
+- Python 3.9-3.11
 - Access to private Aidee Health repositories on Github
 
 ## Installation
@@ -130,26 +130,7 @@ embody-ble --set-time
 
 ## Troubleshooting
 
-### I get a segmentation fault on Mac
-
-As of writing, you need to use the official Python release for Mac. Using brew's version does not work.
-For more, look at the [README](https://github.com/NordicSemiconductor/pc-ble-driver-py#macos-limitations)
-for Nordic's `pc-ble-driver-py`
-
-Suggested setup, using a virtual environment:
-
-```python
-# create virtual environment with official Python version
-/Library/Frameworks/Python.framework/Versions/3.9/bin/python3 -m venv .venv
-# activate virtual environment
-source .venv/bin/activate
-# install embody-ble
-pip install embody-ble
-# test installation
-embody-ble --help
-```
-
-If you're using a Mac M1 or M2 with an ARM processor, look at [this thread](https://github.com/NordicSemiconductor/pc-ble-driver-py/issues/202) for tips.
+No known issues registered.
 
 ## Contributing
 
