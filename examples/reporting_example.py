@@ -1,9 +1,10 @@
 """This example shows how to use the reporter module to receive attribute changes from device.
 
 To run this example, you need to have a device connected to your computer.
-Run the example with `poetry run python examples/reporting_example.py`.
+Run the example with `poetry run python examples/reporting_example.py [device_name]`.
 """
 import logging
+import sys
 import time
 
 from embodyble.embodyble import EmbodyBle
@@ -24,7 +25,7 @@ if __name__ == "__main__":
             logging.info(f"Battery level changed to: {battery_level}%")
 
     embody_ble = EmbodyBle()
-    embody_ble.connect("G3_C360")
+    embody_ble.connect(sys.argv[1] if len(sys.argv) > 1 else None)
     reporter = EmbodyReporter(embody_ble, BatteryChangeListener())
     reporter.start_battery_level_reporting(int_seconds=2)
     time.sleep(20)

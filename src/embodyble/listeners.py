@@ -18,7 +18,7 @@ class BleMessageListener(ABC):
     """Listener interface for being notified of incoming BLE messages."""
 
     @abstractmethod
-    def ble_message_received(self, uuid: int, data: bytes) -> None:
+    def ble_message_received(self, uuid: str, data: bytes) -> None:
         """Process received message"""
 
 

@@ -26,8 +26,6 @@ UART_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 UART_RX_CHAR_UUID = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
 UART_TX_CHAR_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
-EMBODY_NAME_PREFIXES = ["G3_", "EMB"]
-
 
 class EmbodyBle(embodyserial.EmbodySender):
     """Main class for setting up BLE communication with an EmBody device.
@@ -130,6 +128,34 @@ class EmbodyBle(embodyserial.EmbodySender):
             raise EmbodyBleError("Sender not initialized")
         return asyncio.run_coroutine_threadsafe(
             self.__sender.send_async(msg, True, timeout), self.__loop
+        ).result()
+
+    def write_ble_attribute(self, uuid: str, data: bytes) -> None:
+        if not self.__client:
+            raise EmbodyBleError("BLE client not initialized")
+        return asyncio.run_coroutine_threadsafe(
+            self.__client.write_gatt_char(uuid, data), self.__loop
+        ).result()
+
+    def request_ble_attribute(self, uuid: str) -> bytearray:
+        if not self.__client:
+            raise EmbodyBleError("BLE client not initialized")
+        return asyncio.run_coroutine_threadsafe(
+            self.__client.read_gatt_char(uuid), self.__loop
+        ).result()
+
+    def start_ble_notify(self, uuid: str) -> None:
+        if not self.__reader:
+            raise EmbodyBleError("Reader not initialized")
+        asyncio.run_coroutine_threadsafe(
+            self.__reader.start_ble_notify(uuid), self.__loop
+        ).result()
+
+    def stop_ble_notify(self, uuid: str) -> None:
+        if not self.__reader:
+            raise EmbodyBleError("Reader not initialized")
+        asyncio.run_coroutine_threadsafe(
+            self.__reader.stop_ble_notify(uuid), self.__loop
         ).result()
 
     def __connected(self) -> bool:
@@ -253,6 +279,20 @@ class _MessageReader:
         self.__message_listener_executor.shutdown(wait=False, cancel_futures=False)
         self.__ble_message_listener_executor.shutdown(wait=False, cancel_futures=False)
 
+    async def start_ble_notify(self, uuid: str) -> None:
+        """Start notification on a given characteristic."""
+        try:
+            await self.__client.start_notify(uuid, self.on_ble_message_received)
+        except ValueError:
+            return
+
+    async def stop_ble_notify(self, uuid: str) -> None:
+        """Stop notification on a given characteristic."""
+        try:
+            await self.__client.stop_notify(uuid)
+        except ValueError:
+            return
+
     def on_uart_tx_data(self, _: BleakGATTCharacteristic, data: bytearray) -> None:
         """Callback invoked by bleak when a new notification is received.
 
@@ -277,7 +317,7 @@ class _MessageReader:
         This is invoked by the BLE message listener.
         """
         logging.debug(f"Received BLE message for uuid {uuid}: {data.hex()}")
-        self.__handle_ble_message(uuid=uuid.handle, data=data)
+        self.__handle_ble_message(uuid=uuid.uuid, data=data)
 
     def __handle_incoming_message(self, msg: codec.Message) -> None:
         if msg.msg_type < 0x80:
@@ -322,7 +362,7 @@ class _MessageReader:
         except Exception as e:
             logging.warning(f"Error notifying listener: {str(e)}", exc_info=True)
 
-    def __handle_ble_message(self, uuid: int, data: bytes) -> None:
+    def __handle_ble_message(self, uuid: str, data: bytes) -> None:
         logging.debug(f"Handling new BLE message. UUID: {uuid}, data: {data.hex()}")
         if len(self.__ble_message_listeners) == 0:
             return
@@ -333,7 +373,7 @@ class _MessageReader:
 
     @staticmethod
     def __notify_ble_message_listener(
-        listener: BleMessageListener, uuid: int, data: bytes
+        listener: BleMessageListener, uuid: str, data: bytes
     ) -> None:
         try:
             listener.ble_message_received(uuid, data)
