@@ -129,7 +129,9 @@ def __get_all_attributes(send_helper: EmbodySendHelper):
         sys.stdout.write(f"{attrib}: ")
         sys.stdout.flush()
         try:
-            print(getattr(send_helper, get_attributes_dict.get(attrib))())
+            method_name = get_attributes_dict.get(attrib)
+            if method_name:
+                print(getattr(send_helper, method_name)())
         except Exception as e:
             print(f"Error: {e}")
 
