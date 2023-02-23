@@ -124,20 +124,22 @@ def main(args=None):
             embody_ble.shutdown()
 
 
-def __get_all_attributes(send_helper):
+def __get_all_attributes(send_helper: EmbodySendHelper):
     for attrib in get_attributes_dict.keys():
         sys.stdout.write(f"{attrib}: ")
         sys.stdout.flush()
         try:
-            print(getattr(send_helper, get_attributes_dict.get(attrib))())
+            method_name = get_attributes_dict.get(attrib)
+            if method_name:
+                print(getattr(send_helper, method_name)())
         except Exception as e:
             print(f"Error: {e}")
 
 
-def __list_files(send_helper):
+def __list_files(send_helper: EmbodySendHelper):
     files = send_helper.get_files()
     if len(files) > 0:
-        for name, size in send_helper.get_files():
+        for name, size in files:
             print(f"{name} ({round(size/1024)}KB)")
     else:
         print("[]")
