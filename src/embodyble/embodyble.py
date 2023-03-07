@@ -106,6 +106,16 @@ class EmbodyBle(embodyserial.EmbodySender):
         )
         logging.debug(f"Async connect completed: {self.__client}")
 
+    def disconnect(self) -> None:
+        asyncio.run_coroutine_threadsafe(
+            self.__async_disconnect(), self.__loop
+        ).result()
+
+    async def __async_disconnect(self) -> None:
+        """Disconnect from device if connected."""
+        if self.__connected() and self.__client:
+            await self.__client.disconnect()
+
     def shutdown(self) -> None:
         """Shutdown after use."""
         self.__sender = None
