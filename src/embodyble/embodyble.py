@@ -18,6 +18,7 @@ from embodyserial import embodyserial
 
 from .exceptions import EmbodyBleError
 from .listeners import BleMessageListener
+from .listeners import ConnectionListener
 from .listeners import MessageListener
 from .listeners import ResponseMessageListener
 
@@ -47,6 +48,7 @@ class EmbodyBle(embodyserial.EmbodySender):
         self,
         msg_listener: Optional[MessageListener] = None,
         ble_msg_listener: Optional[BleMessageListener] = None,
+        connection_listener: Optional[ConnectionListener] = None,
     ) -> None:
         super().__init__()
         self.__client: Optional[BleakClient] = None
@@ -58,6 +60,12 @@ class EmbodyBle(embodyserial.EmbodySender):
         self.__ble_message_listeners: list[BleMessageListener] = []
         if ble_msg_listener:
             self.__ble_message_listeners.append(ble_msg_listener)
+        self.__connection_listeners: list[ConnectionListener] = []
+        if connection_listener:
+            self.__connection_listeners.append(connection_listener)
+        self.__connection_listener_executor = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="conn-worker"
+        )
         self.__loop = asyncio.new_event_loop()
         t = Thread(
             target=self.__start_background_loop, args=(self.__loop,), daemon=True
@@ -104,6 +112,7 @@ class EmbodyBle(embodyserial.EmbodySender):
         await self.__client.start_notify(
             UART_TX_CHAR_UUID, self.__reader.on_uart_tx_data
         )
+        self.__notify_connection_listeners(True)
         logging.debug(f"Async connect completed: {self.__client}")
 
     def disconnect(self) -> None:
@@ -123,6 +132,7 @@ class EmbodyBle(embodyserial.EmbodySender):
             self.__reader.stop()
             self.__reader = None
         self.__loop.stop()
+        self.__connection_listener_executor.shutdown(wait=False, cancel_futures=False)
 
     def send_async(self, msg: codec.Message) -> None:
         if not self.__sender:
@@ -175,6 +185,9 @@ class EmbodyBle(embodyserial.EmbodySender):
     def on_disconnected(self, client: BleakClient) -> None:
         """Invoked by bleak when disconnected."""
         logging.debug(f"Disconnected: {client}")
+        self.__notify_connection_listeners(False)
+        if self.__reader:
+            self.__reader.stop()
 
     @staticmethod
     def __find_name_from_serial_port() -> str:
@@ -214,6 +227,28 @@ class EmbodyBle(embodyserial.EmbodySender):
 
     def add_ble_message_listener(self, listener: BleMessageListener) -> None:
         self.__ble_message_listeners.append(listener)
+
+    def add_connection_listener(self, listener: ConnectionListener) -> None:
+        self.__connection_listeners.append(listener)
+
+    def __notify_connection_listeners(self, connected: bool) -> None:
+        if len(self.__connection_listeners) == 0:
+            return
+        for listener in self.__connection_listeners:
+            self.__connection_listener_executor.submit(
+                EmbodyBle.__notify_connection_listener, listener, connected
+            )
+
+    @staticmethod
+    def __notify_connection_listener(
+        listener: ConnectionListener, connected: bool
+    ) -> None:
+        try:
+            listener.on_connected(connected)
+        except Exception as e:
+            logging.warning(
+                f"Error notifying connection listener: {str(e)}", exc_info=True
+            )
 
 
 class _MessageSender(ResponseMessageListener):
