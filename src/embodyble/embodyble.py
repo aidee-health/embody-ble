@@ -123,6 +123,10 @@ class EmbodyBle(embodyserial.EmbodySender):
     async def __async_disconnect(self) -> None:
         """Disconnect from device if connected."""
         if self.__connected() and self.__client:
+            try:
+                await self.__client.stop_notify(UART_TX_CHAR_UUID)
+            except Exception as e:
+                logging.debug(f"Failed to stop notify UART_TX:: {e}")
             await self.__client.disconnect()
 
     def shutdown(self) -> None:
