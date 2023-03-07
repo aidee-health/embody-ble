@@ -60,7 +60,7 @@ class EmbodyBle(embodyserial.EmbodySender):
         self.__ble_message_listeners: list[BleMessageListener] = []
         if ble_msg_listener:
             self.__ble_message_listeners.append(ble_msg_listener)
-        self.__connection_listeners: list[BleMessageListener] = []
+        self.__connection_listeners: list[ConnectionListener] = []
         if connection_listener:
             self.__connection_listeners.append(connection_listener)
         self.__connection_listener_executor = ThreadPoolExecutor(
