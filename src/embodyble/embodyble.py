@@ -219,12 +219,12 @@ class EmbodyBle(embodyserial.EmbodySender):
 
     async def __list_available_devices(self, timeout=3) -> list[str]:
         """List available devices filtered by NUS service."""
-        scanner = BleakScanner(service_uuids=[UART_SERVICE_UUID])
+        scanner = BleakScanner()
         await scanner.start()
         await asyncio.sleep(timeout)
         await scanner.stop()
         devices = scanner.discovered_devices
-        return [d.name for d in devices]
+        return [d.name for d in devices if d.name and d.name.startswith("G3_")]
 
     def add_message_listener(self, listener: MessageListener) -> None:
         self.__message_listeners.append(listener)
