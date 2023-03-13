@@ -503,14 +503,14 @@ files = [
 
 [[package]]
 name = "embody-serial"
-version = "1.0.12"
+version = "1.0.13"
 description = "Communicate with the embody device over a serial port"
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "embody_serial-1.0.12-py3-none-any.whl", hash = "sha256:90cb6f5a293f54bbccc955aa8cba364854049b01d8105143f39c64f158e05abd"},
-    {file = "embody_serial-1.0.12.tar.gz", hash = "sha256:7d83358fd7af4ba9a04850002ef263fc2bd8b4d55f9ff33d2a881b824b27f770"},
+    {file = "embody_serial-1.0.13-py3-none-any.whl", hash = "sha256:c92936c7e05faa0e91bdbef93d4aa40e7e58e8b268fb6c301dcc53cc54ddb62b"},
+    {file = "embody_serial-1.0.13.tar.gz", hash = "sha256:a13bb8fa00ec92b9480e6e3eccbb378ee38258284dcdc3caf6e523a99b40641a"},
 ]
 
 [package.dependencies]
