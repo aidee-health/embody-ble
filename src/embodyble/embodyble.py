@@ -49,6 +49,7 @@ class EmbodyBle(embodyserial.EmbodySender):
         msg_listener: Optional[MessageListener] = None,
         ble_msg_listener: Optional[BleMessageListener] = None,
         connection_listener: Optional[ConnectionListener] = None,
+        response_msg_listener: Optional[ResponseMessageListener] = None,
     ) -> None:
         super().__init__()
         self.__client: Optional[BleakClient] = None
@@ -57,6 +58,9 @@ class EmbodyBle(embodyserial.EmbodySender):
         self.__message_listeners: list[MessageListener] = []
         if msg_listener:
             self.__message_listeners.append(msg_listener)
+        self.__response_msg_listeners: list[ResponseMessageListener] = []
+        if response_msg_listener:
+            self.__response_msg_listeners.append(response_msg_listener)
         self.__ble_message_listeners: list[BleMessageListener] = []
         if ble_msg_listener:
             self.__ble_message_listeners.append(ble_msg_listener)
@@ -109,6 +113,9 @@ class EmbodyBle(embodyserial.EmbodySender):
         )
         self.__sender = _MessageSender(self.__client)
         self.__reader.add_response_message_listener(self.__sender)
+        if self.__response_msg_listeners:
+            for listener in self.__response_msg_listeners:
+                self.__reader.add_response_message_listener(listener)
         await self.__client.start_notify(
             UART_TX_CHAR_UUID, self.__reader.on_uart_tx_data
         )
