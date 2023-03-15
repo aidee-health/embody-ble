@@ -107,8 +107,6 @@ class EmbodyBle(embodyserial.EmbodySender):
             )
         self.__client = BleakClient(device, self._on_disconnected)
         await self.__client.connect()
-        if self.__client.__class__.__name__ == "BleakClientBlueZDBus":
-            await self.__client._acquire_mtu()
 
         logging.info(f"Connected: {self.__client}, mtu size: {self.__client.mtu_size}")
         self.__reader = _MessageReader(
