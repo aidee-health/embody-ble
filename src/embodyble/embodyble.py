@@ -194,10 +194,10 @@ class EmbodyBle(embodyserial.EmbodySender):
         """Check whether BLE is connected (active handle)"""
         return self.__client is not None and self.__client.is_connected
 
-    async def _on_disconnected(self, client: BleakClient) -> None:
+    def _on_disconnected(self, client: BleakClient) -> None:
         """Invoked by bleak when disconnected."""
         logging.debug(f"Disconnected: {client}")
-        await client.disconnect()
+        asyncio.run_coroutine_threadsafe(client.disconnect(), self.__loop).result()
         self.__notify_connection_listeners(False)
         if self.__reader:
             self.__reader.stop()
