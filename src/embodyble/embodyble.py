@@ -105,9 +105,10 @@ class EmbodyBle(embodyserial.EmbodySender):
             raise EmbodyBleError(
                 f"Could not find device with name {self.__device_name}"
             )
-        self.__client = BleakClient(device, self.on_disconnected)
+        self.__client = BleakClient(device, self._on_disconnected)
         await self.__client.connect()
-        logging.info(f"Connected: {self.__client}")
+
+        logging.info(f"Connected: {self.__client}, mtu size: {self.__client.mtu_size}")
         self.__reader = _MessageReader(
             self.__client, self.__message_listeners, self.__ble_message_listeners
         )
@@ -193,9 +194,10 @@ class EmbodyBle(embodyserial.EmbodySender):
         """Check whether BLE is connected (active handle)"""
         return self.__client is not None and self.__client.is_connected
 
-    def on_disconnected(self, client: BleakClient) -> None:
+    def _on_disconnected(self, client: BleakClient) -> None:
         """Invoked by bleak when disconnected."""
         logging.debug(f"Disconnected: {client}")
+        asyncio.run_coroutine_threadsafe(client.disconnect(), self.__loop).result()
         self.__notify_connection_listeners(False)
         if self.__reader:
             self.__reader.stop()
