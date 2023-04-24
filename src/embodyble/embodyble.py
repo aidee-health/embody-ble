@@ -12,9 +12,10 @@ from typing import Optional
 from bleak import BleakClient
 from bleak import BleakGATTCharacteristic
 from bleak import BleakScanner
-from embodycodec import attributes
 from embodycodec import codec
 from embodyserial import embodyserial
+from embodyserial.helpers import EmbodySendHelper
+from packaging import version
 
 from .exceptions import EmbodyBleError
 from .listeners import BleMessageListener
@@ -205,17 +206,11 @@ class EmbodyBle(embodyserial.EmbodySender):
     def __find_name_from_serial_port() -> str:
         """Request serial no from EmBody device."""
         comm = embodyserial.EmbodySerial()
-        response = comm.send(
-            msg=codec.GetAttribute(attributes.SerialNoAttribute.attribute_id), timeout=5
-        )
-        if not response or not isinstance(response, codec.GetAttributeResponse):
-            raise EmbodyBleError(
-                "Unable to find connected EmBody device on any serial port or no response received"
-            )
-        device_name = (
-            "G3_"
-            + response.value.value.to_bytes(8, "big", signed=True).hex()[-4:].upper()
-        )
+        send_helper = EmbodySendHelper(comm)
+        serial_no = send_helper.get_serial_no()
+        firmware_version = version.parse(send_helper.get_firmware_version())
+        prefix = "G3_" if firmware_version < version.parse("5.4.0") else "EmBody_"
+        device_name = prefix + serial_no[-4:].upper()
         comm.shutdown()
         return device_name
 
@@ -232,7 +227,12 @@ class EmbodyBle(embodyserial.EmbodySender):
         await asyncio.sleep(timeout)
         await scanner.stop()
         devices = scanner.discovered_devices
-        return [d.name for d in devices if d.name and d.name.startswith("G3_")]
+        return [d.name for d in devices if EmbodyBle.is_embody_ble_device(d.name)]
+
+    @staticmethod
+    def is_embody_ble_device(device_name: str) -> bool:
+        """Check if the device name is an EmBody device."""
+        return device_name and device_name.lower().startswith(tuple(["g3", "embody"]))
 
     def add_message_listener(self, listener: MessageListener) -> None:
         self.__message_listeners.append(listener)
