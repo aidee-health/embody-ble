@@ -491,26 +491,26 @@ pipenv = ["pipenv"]
 
 [[package]]
 name = "embody-codec"
-version = "1.0.21"
+version = "1.0.22"
 description = "Embody Codec"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "embody_codec-1.0.21-py3-none-any.whl", hash = "sha256:12b117161c778041210346b76c4afad5b5c5493017e604b5458e067182042700"},
-    {file = "embody_codec-1.0.21.tar.gz", hash = "sha256:c168d498a473cd79d09e2a8e112e768883ba823755b79137f6b0ac057b92e165"},
+    {file = "embody_codec-1.0.22-py3-none-any.whl", hash = "sha256:fbf36b1a7804c875e1dd6dadcbca454851ace91d2d8ff0b69a99c873ac10079a"},
+    {file = "embody_codec-1.0.22.tar.gz", hash = "sha256:1d2ab009439874f074bdec717db42967673ab0f2f1b503f028b733a0dffa925a"},
 ]
 
 [[package]]
 name = "embody-serial"
-version = "1.0.18"
+version = "1.0.19"
 description = "Communicate with the embody device over a serial port"
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "embody_serial-1.0.18-py3-none-any.whl", hash = "sha256:a18733ad671a4408f6f3068ad775ea56c456135012cc93c43e2db8c5c0a033f7"},
-    {file = "embody_serial-1.0.18.tar.gz", hash = "sha256:cb827506d6d7cd7e64384dd9a03cf2eb222256e896a20a501d1fb874990e0f40"},
+    {file = "embody_serial-1.0.19-py3-none-any.whl", hash = "sha256:34709cbc987da6d8703f0f52056a0a5bc3fb283b4365d7e3df4c1b3f5437f8c6"},
+    {file = "embody_serial-1.0.19.tar.gz", hash = "sha256:18d734babaf08e6a03f1feacf663b842a90e6a959268f2a8b2d76798514051cb"},
 ]
 
 [package.dependencies]
@@ -1107,19 +1107,19 @@ flake8 = ">=3.9.1"
 
 [[package]]
 name = "platformdirs"
-version = "3.2.0"
+version = "3.3.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "platformdirs-3.2.0-py3-none-any.whl", hash = "sha256:ebe11c0d7a805086e99506aa331612429a72ca7cd52a1f0d277dc4adc20cb10e"},
-    {file = "platformdirs-3.2.0.tar.gz", hash = "sha256:d5b638ca397f25f979350ff789db335903d7ea010ab28903f57b27e1b16c2b08"},
+    {file = "platformdirs-3.3.0-py3-none-any.whl", hash = "sha256:ea61fd7b85554beecbbd3e9b37fb26689b227ffae38f73353cbcc1cf8bd01878"},
+    {file = "platformdirs-3.3.0.tar.gz", hash = "sha256:64370d47dc3fca65b4879f89bdead8197e93e05d696d6d1816243ebae8595da5"},
 ]
 
 [package.extras]
-docs = ["furo (>=2022.12.7)", "proselint (>=0.13)", "sphinx (>=6.1.3)", "sphinx-autodoc-typehints (>=1.22,!=1.23.4)"]
-test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.2.2)", "pytest-cov (>=4)", "pytest-mock (>=3.10)"]
+docs = ["furo (>=2023.3.27)", "proselint (>=0.13)", "sphinx (>=6.1.3)", "sphinx-autodoc-typehints (>=1.23,!=1.23.4)"]
+test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.3.1)", "pytest-cov (>=4)", "pytest-mock (>=3.10)"]
 
 [[package]]
 name = "pluggy"
@@ -1621,14 +1621,14 @@ files = [
 
 [[package]]
 name = "sphinx"
-version = "6.2.0"
+version = "6.2.1"
 description = "Python documentation generator"
 category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "Sphinx-6.2.0.tar.gz", hash = "sha256:9ef22c2941bc3d0ff080d25a797f7521fc317e857395c712ddde97a19d5bb440"},
-    {file = "sphinx-6.2.0-py3-none-any.whl", hash = "sha256:ff1c2a1167bef9cdcd8ec71339e85fe10f26d4e9ef9382ef10b2687c876c936b"},
+    {file = "Sphinx-6.2.1.tar.gz", hash = "sha256:6d56a34697bb749ffa0152feafc4b19836c755d90a7c59b72bc7dfd371b9cc6b"},
+    {file = "sphinx-6.2.1-py3-none-any.whl", hash = "sha256:97787ff1fa3256a3eef9eda523a63dbf299f7b47e053cfcf684a1c2a8380c912"},
 ]
 
 [package.dependencies]
