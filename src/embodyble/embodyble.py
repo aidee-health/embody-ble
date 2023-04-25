@@ -230,9 +230,11 @@ class EmbodyBle(embodyserial.EmbodySender):
         return [d.name for d in devices if EmbodyBle.is_embody_ble_device(d.name)]
 
     @staticmethod
-    def is_embody_ble_device(device_name: str) -> bool:
+    def is_embody_ble_device(device_name: Optional[str]) -> bool:
         """Check if the device name is an EmBody device."""
-        return device_name and device_name.lower().startswith(tuple(["g3", "embody"]))
+        return device_name is not None and device_name.lower().startswith(
+            tuple(["g3", "embody"])
+        )
 
     def add_message_listener(self, listener: MessageListener) -> None:
         self.__message_listeners.append(listener)
