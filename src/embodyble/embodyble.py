@@ -196,7 +196,7 @@ class EmbodyBle(embodyserial.EmbodySender):
 
     def _on_disconnected(self, client: BleakClient) -> None:
         """Invoked by bleak when disconnected."""
-        logging.debug(f"Disconnected: {client}")
+        logging.info(f"Disconnected: {client}")
         self.__notify_connection_listeners(False)
         if self.__reader:
             self.__reader.stop()
