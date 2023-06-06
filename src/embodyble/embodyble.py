@@ -141,6 +141,7 @@ class EmbodyBle(embodyserial.EmbodySender):
 
     def shutdown(self) -> None:
         """Shutdown after use."""
+        self.disconnect()
         self.__sender = None
         if self.__reader:
             self.__reader.stop()
