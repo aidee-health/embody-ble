@@ -10,8 +10,8 @@ from threading import Thread
 from typing import Optional
 
 from bleak import BleakClient
-from bleak import BleakGATTCharacteristic
 from bleak import BleakScanner
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from embodycodec import codec
 from embodyserial import embodyserial
 from embodyserial.helpers import EmbodySendHelper
@@ -131,12 +131,13 @@ class EmbodyBle(embodyserial.EmbodySender):
 
     async def __async_disconnect(self) -> None:
         """Disconnect from device if connected."""
-        if self.__connected() and self.__client:
+        if self.__client:
             try:
                 await self.__client.stop_notify(UART_TX_CHAR_UUID)
             except Exception as e:
                 logging.debug(f"Failed to stop notify UART_TX:: {e}")
             await self.__client.disconnect()
+            self.__client = None
 
     def shutdown(self) -> None:
         """Shutdown after use."""
