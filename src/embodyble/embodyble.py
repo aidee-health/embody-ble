@@ -89,7 +89,7 @@ class EmbodyBle(embodyserial.EmbodySender):
 
     async def __async_connect(self, device_name: Optional[str] = None) -> None:
         """Connect to specified device (or use device name from serial port as default)."""
-        if self.__connected() and self.__client:
+        if self.__client:
             await self.__client.disconnect()
         if self.__reader:
             self.__reader.stop()
@@ -192,10 +192,6 @@ class EmbodyBle(embodyserial.EmbodySender):
         asyncio.run_coroutine_threadsafe(
             self.__reader.stop_ble_notify(uuid), self.__loop
         ).result()
-
-    def __connected(self) -> bool:
-        """Check whether BLE is connected (active handle)"""
-        return self.__client is not None and self.__client.is_connected
 
     def _on_disconnected(self, client: BleakClient) -> None:
         """Invoked by bleak when disconnected."""
