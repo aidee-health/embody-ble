@@ -137,6 +137,7 @@ class EmbodyBle(embodyserial.EmbodySender):
             except Exception as e:
                 logging.debug(f"Failed to stop notify UART_TX:: {e}")
             await self.__client.disconnect()
+            logging.info(f"Disconnected: {self.__client}")
             self.__client = None
 
     def shutdown(self) -> None:
