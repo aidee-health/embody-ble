@@ -10,8 +10,8 @@ from threading import Thread
 from typing import Optional
 
 from bleak import BleakClient
-from bleak import BleakGATTCharacteristic
 from bleak import BleakScanner
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from embodycodec import codec
 from embodyserial import embodyserial
 from embodyserial.helpers import EmbodySendHelper
@@ -89,7 +89,7 @@ class EmbodyBle(embodyserial.EmbodySender):
 
     async def __async_connect(self, device_name: Optional[str] = None) -> None:
         """Connect to specified device (or use device name from serial port as default)."""
-        if self.__connected() and self.__client:
+        if self.__client:
             await self.__client.disconnect()
         if self.__reader:
             self.__reader.stop()
@@ -131,15 +131,18 @@ class EmbodyBle(embodyserial.EmbodySender):
 
     async def __async_disconnect(self) -> None:
         """Disconnect from device if connected."""
-        if self.__connected() and self.__client:
+        if self.__client:
             try:
                 await self.__client.stop_notify(UART_TX_CHAR_UUID)
             except Exception as e:
                 logging.debug(f"Failed to stop notify UART_TX:: {e}")
             await self.__client.disconnect()
+            logging.info(f"Disconnected: {self.__client}")
+            self.__client = None
 
     def shutdown(self) -> None:
         """Shutdown after use."""
+        self.disconnect()
         self.__sender = None
         if self.__reader:
             self.__reader.stop()
@@ -191,13 +194,9 @@ class EmbodyBle(embodyserial.EmbodySender):
             self.__reader.stop_ble_notify(uuid), self.__loop
         ).result()
 
-    def __connected(self) -> bool:
-        """Check whether BLE is connected (active handle)"""
-        return self.__client is not None and self.__client.is_connected
-
     def _on_disconnected(self, client: BleakClient) -> None:
         """Invoked by bleak when disconnected."""
-        logging.debug(f"Disconnected: {client}")
+        logging.info(f"Disconnected: {client}")
         self.__notify_connection_listeners(False)
         if self.__reader:
             self.__reader.stop()
