@@ -18,7 +18,7 @@ classifiers = [
 Changelog = "https://github.com/aidee-health/embody-ble/releases"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<4.0"
+python = ">=3.9,<3.13"
 embody-serial = ">=1.0.22"
 bleak = "^0.21.1"
 
