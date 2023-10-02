@@ -226,7 +226,9 @@ class EmbodyBle(embodyserial.EmbodySender):
         await asyncio.sleep(timeout)
         await scanner.stop()
         devices = scanner.discovered_devices
-        return [d.name for d in devices if EmbodyBle.is_embody_ble_device(d.name)]
+        return [
+            d.name for d in devices if d.name and EmbodyBle.is_embody_ble_device(d.name)
+        ]
 
     @staticmethod
     def is_embody_ble_device(device_name: Optional[str]) -> bool:
