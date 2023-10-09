@@ -139,6 +139,11 @@ class AttributeChangedListener:
     def on_ecgs_ppgs_changed(self, ecgs: list[int], ppgs: list[int]) -> None:
         logging.info(f"ECGs and PPGs changed: ecgs={ecgs}, ppgs={ppgs}")
 
+    def on_on_body_detection_changed(self, on_body_detection: bool) -> None:
+        logging.info(
+            f"On body detection {'activated' if on_body_detection else 'deactivated'}"
+        )
+
 
 class AttributeChangedMessageListener(MessageListener, BleMessageListener):
     """MessageListener implementation delegating to high level callback interface."""
@@ -229,6 +234,9 @@ class AttributeChangedMessageListener(MessageListener, BleMessageListener):
             elif isinstance(msg.value, attributes.FirmwareUpdateProgressAttribute):
                 for listener in self.__message_listeners:
                     listener.on_firmware_update_changed(msg.value.value)
+            elif isinstance(msg.value, attributes.OnBodyDetectAttribute):
+                for listener in self.__message_listeners:
+                    listener.on_on_body_detection_changed(msg.value.value)
             elif isinstance(msg.value, attributes.DiagnosticsAttribute):
                 for listener in self.__message_listeners:
                     listener.on_diagnostics_changed(
