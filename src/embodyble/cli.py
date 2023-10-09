@@ -109,6 +109,12 @@ def main(args=None):
         elif parsed_args.reboot:
             print(f"Rebooting device: {send_helper.reboot_device()}")
             return
+        elif parsed_args.activate_on_body_detect:
+            print(f"Activating on body detect: {send_helper.set_on_body_detect(True)}")
+        elif parsed_args.deactivate_on_body_detect:
+            print(
+                f"Deactivating on body detect: {send_helper.set_on_body_detect(False)}"
+            )
         elif parsed_args.report_attribute:
             attr_changed_listener = AttributeChangedListener()
             reporter = EmbodyReporter(embody_ble, attr_changed_listener)
@@ -213,6 +219,14 @@ def __get_parser():
         help="List all available devices",
         action="store_true",
         default=None,
+    )
+    parser.add_argument(
+        "--activate-on-body-detect", help="Activate on body detect", action="store_true"
+    )
+    parser.add_argument(
+        "--deactivate-on-body-detect",
+        help="Deactivate on body detect",
+        action="store_true",
     )
     parser.add_argument(
         "--version",
