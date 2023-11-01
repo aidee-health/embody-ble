@@ -100,10 +100,10 @@ class EmbodyBle(embodyserial.EmbodySender):
         logging.info(f"Using EmBody device name: {self.__device_name}")
 
         device = await BleakScanner.find_device_by_filter(
-            lambda d, ad: (
+            lambda d, ad: bool(
                 ad.local_name and ad.local_name.lower() == self.__device_name.lower()
             )
-            or (d and d.name and d.name.lower() == self.__device_name.lower())
+            or bool(d and d.name and d.name.lower() == self.__device_name.lower())
         )
         if not device:
             raise EmbodyBleError(
