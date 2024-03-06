@@ -271,15 +271,19 @@ class AttributeChangedMessageListener(MessageListener, BleMessageListener):
                         msg.value.value.rf_gain if msg.value.value.rf_gain else 0,
                         msg.value.value.cf_value if msg.value.value.cf_value else 0,
                         msg.value.value.ecg_gain if msg.value.value.ecg_gain else 0,
-                        msg.value.value.ioffdac_range
-                        if msg.value.value.ioffdac_range
-                        else 0,
+                        (
+                            msg.value.value.ioffdac_range
+                            if msg.value.value.ioffdac_range
+                            else 0
+                        ),
                         msg.value.value.led1 if msg.value.value.led1 else 0,
                         msg.value.value.led4 if msg.value.value.led4 else 0,
                         msg.value.value.off_dac1 if msg.value.value.off_dac1 else 0,
-                        msg.value.value.relative_gain
-                        if msg.value.value.relative_gain
-                        else 0,
+                        (
+                            msg.value.value.relative_gain
+                            if msg.value.value.relative_gain
+                            else 0
+                        ),
                         msg.value.value.led2,
                         msg.value.value.led3,
                         msg.value.value.off_dac2,

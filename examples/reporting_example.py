@@ -3,6 +3,7 @@
 To run this example, you need to have a device connected to your computer.
 Run the example with `poetry run python examples/reporting_example.py [device_name]`.
 """
+
 import logging
 import sys
 import time

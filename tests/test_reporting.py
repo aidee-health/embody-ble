@@ -1,4 +1,5 @@
 """Test cases for the reporting module."""
+
 import queue
 
 import pytest
