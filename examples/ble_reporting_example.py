@@ -3,6 +3,7 @@
 To run this example, you need to have a device connected to your computer.
 Run the example with `poetry run python examples/ble_reporting_example.py [device_name]`.
 """
+
 import datetime
 import logging
 import sys

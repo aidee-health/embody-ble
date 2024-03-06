@@ -1,4 +1,5 @@
 """Sphinx configuration."""
+
 project = "Embody BLE"
 author = "Aidee Health"
 copyright = "2022, Aidee Health"
