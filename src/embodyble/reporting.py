@@ -144,6 +144,9 @@ class AttributeChangedListener:
             f"On body detection {'activated' if on_body_detection else 'deactivated'}"
         )
 
+    def on_autorec_changed(self, autorec: int) -> None:
+        logging.info(f"Auto recording changed: {autorec}")
+
 
 class AttributeChangedMessageListener(MessageListener, BleMessageListener):
     """MessageListener implementation delegating to high level callback interface."""
@@ -291,7 +294,7 @@ class AttributeChangedMessageListener(MessageListener, BleMessageListener):
                     )
             elif isinstance(msg.value, attributes.DisableAutoRecAttribute):
                 for listener in self.__message_listeners:
-                    listener.on_autorec_changed(msg.value)
+                    listener.on_autorec_changed(msg.value.value)
             else:
                 logging.warning("Unhandled attribute changed message: %s", msg)
         elif isinstance(msg, codec.RawPulseChanged):
