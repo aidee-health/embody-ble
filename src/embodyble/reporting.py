@@ -289,6 +289,9 @@ class AttributeChangedMessageListener(MessageListener, BleMessageListener):
                         msg.value.value.off_dac2,
                         msg.value.value.off_dac3,
                     )
+            elif isinstance(msg.value, attributes.DisableAutoRecAttribute):
+                for listener in self.__message_listeners:
+                    listener.on_autorec_changed(msg.value)
             else:
                 logging.warning("Unhandled attribute changed message: %s", msg)
         elif isinstance(msg, codec.RawPulseChanged):
@@ -445,7 +448,7 @@ class EmbodyReporter:
 
     def start_recording_reporting(self) -> None:
         self.__send_configure_reporting(
-            attributes.MeasurementDeactivatedAttribute.attribute_id, 0
+            attributes.MeasurementDeactivatedAttribute.attribute_id, 1
         )
 
     def stop_recording_reporting(self) -> None:
