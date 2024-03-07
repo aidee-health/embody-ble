@@ -86,7 +86,7 @@ To see which options are available.
 
 ### Example - Attribute reporting
 
-To see how attribute reporting can be configured, have a look at the example in [examples/reporting_example.py](./examples/reporting_example.py)
+To see how attribute reporting can be configured, have a look at the example in [examples/ble_reporting_example.py](./examples/reporting_example.py)
 
 You can also test attribute reporting using the cli:
 
