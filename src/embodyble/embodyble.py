@@ -99,15 +99,15 @@ class EmbodyBle(embodyserial.EmbodySender):
         else:
             self.__device_name = self.__find_name_from_serial_port()
         logging.info(f"Using EmBody device name: {self.__device_name}")
+        scanner = BleakScanner()
 
-        async with BleakScanner() as scanner:
-            device = await scanner.find_device_by_filter(
-                lambda d, ad: bool(
-                    ad.local_name
-                    and ad.local_name.lower() == self.__device_name.lower()
-                )
-                or bool(d and d.name and d.name.lower() == self.__device_name.lower())
+        device = await scanner.find_device_by_filter(
+            lambda d, ad: bool(
+                ad.local_name and ad.local_name.lower() == self.__device_name.lower()
             )
+            or bool(d and d.name and d.name.lower() == self.__device_name.lower())
+        )  # type: ignore[call-arg]
+        await scanner.stop()
         if not device:
             raise EmbodyBleError(
                 f"Could not find device with name {self.__device_name}"
@@ -227,16 +227,15 @@ class EmbodyBle(embodyserial.EmbodySender):
 
     async def __list_available_devices(self, timeout=3) -> list[str]:
         """List available devices filtered by NUS service."""
-        async with BleakScanner() as scanner:
-            await scanner.start()
-            await asyncio.sleep(timeout)
-            await scanner.stop()
-            devices = scanner.discovered_devices
-            return [
-                d.name
-                for d in devices
-                if d.name and EmbodyBle.is_embody_ble_device(d.name)
-            ]
+        scanner = BleakScanner()
+        await scanner.start()
+        await asyncio.sleep(timeout)
+        await scanner.stop()
+        devices = scanner.discovered_devices
+        await scanner.stop()
+        return [
+            d.name for d in devices if d.name and EmbodyBle.is_embody_ble_device(d.name)
+        ]
 
     @staticmethod
     def is_embody_ble_device(device_name: Optional[str]) -> bool:
