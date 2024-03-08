@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "embody-ble"
-version = "1.1.15"
+version = "1.1.16"
 description = "Communicate with the EmBody device over BLE (bluetooth)"
 authors = ["Aidee Health AS <hello@aidee.io>"]
 license = "MIT"
