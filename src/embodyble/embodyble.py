@@ -107,7 +107,6 @@ class EmbodyBle(embodyserial.EmbodySender):
             )
             or bool(d and d.name and d.name.lower() == self.__device_name.lower())
         )  # type: ignore[call-arg]
-        await scanner.stop()
         if not device:
             raise EmbodyBleError(
                 f"Could not find device with name {self.__device_name}"
