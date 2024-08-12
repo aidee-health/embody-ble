@@ -493,6 +493,14 @@ class EmbodyReporter:
     def stop_diagnostics_reporting(self) -> None:
         self.__send_reset_reporting(attributes.DiagnosticsAttribute.attribute_id)
 
+    def start_flash_reporting(self, int_millis: int) -> None:
+        self.__send_configure_reporting(
+            attributes.FlashInfoAttribute.attribute_id, int_millis
+        )
+
+    def stop_flash_reporting(self) -> None:
+        self.__send_reset_reporting(attributes.FlashInfoAttribute.attribute_id)
+
     def start_afe_settings_reporting(self, int_millis: int) -> None:
         self.__send_configure_reporting(
             attributes.AfeSettingsAllAttribute.attribute_id, int_millis
@@ -536,6 +544,7 @@ class EmbodyReporter:
         self.stop_recording_reporting()
         self.stop_sleep_mode_reporting()
         self.stop_temperature_reporting()
+        self.stop_flash_reporting()
 
     def __send_configure_reporting(
         self, attribute_id: int, interval: int, reporting_mode: int = 0x01
