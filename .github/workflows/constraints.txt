@@ -3,3 +3,4 @@ nox==2024.3.2
 nox-poetry==1.0.3
 poetry==1.8.2
 virtualenv==20.25.1
+embody-codec @ git+https://github.com/aidee-health/embody-codec.git@file_transfer_over_ble

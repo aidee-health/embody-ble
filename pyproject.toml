@@ -19,8 +19,9 @@ Changelog = "https://github.com/aidee-health/embody-ble/releases"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
-embody-serial = ">=1.0.28"
 bleak = "^0.21.1"
+embody-codec = {git = "https://github.com/aidee-health/embody-codec.git", rev = "file_transfer_over_ble"}
+embody-serial = ">=1.0.28"
 
 [tool.poetry.dev-dependencies]
 Pygments = ">=2.10.0"

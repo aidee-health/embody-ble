@@ -117,7 +117,7 @@ class EmbodyBle(embodyserial.EmbodySender):
                 f"Could not find device with name {self.__device_name}"
             )
         self.__client = BleakClient(device, self._on_disconnected)
-        self.__client._backend._mtu_size = 1497
+        #self.__client._backend._mtu_size = 1497
         await self.__client.connect()
 
         logging.info(f"Connected: {self.__client}, mtu size: {self.__client.mtu_size}")
@@ -371,7 +371,7 @@ class _MessageReader:
         New messages, both custom codec messages and BLE messages are received here.
         """
         logging.debug(f"New incoming data UART TX data: {bytes(data).hex()}")
-        if (self.saved_data):
+        if (self.saved_data != None):
             logging.debug(f"Adding saved data: {bytes(self.saved_data).hex()}")
             data = self.saved_data + data
             self.saved_data = None
