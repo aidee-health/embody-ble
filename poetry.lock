@@ -636,18 +636,14 @@ poetry = ["poetry"]
 
 [[package]]
 name = "embody-codec"
-version = "1.0.30"
+version = "1.0.31"
 description = "Embody Codec"
 optional = false
-python-versions = ">=3.9,<4.0"
-files = []
-develop = false
-
-[package.source]
-type = "git"
-url = "https://github.com/aidee-health/embody-codec.git"
-reference = "file_transfer_over_ble"
-resolved_reference = "c028a7f5c2e2641f954a5c10fa61ef2155b9c2eb"
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "embody_codec-1.0.31-py3-none-any.whl", hash = "sha256:996d1319996a9b107bf5f2edc2280f7234ca9e28e5a7b3ac6924b1e53291f669"},
+    {file = "embody_codec-1.0.31.tar.gz", hash = "sha256:f6d808f7f3277c7bceab994a319d9401b0b7b7569a7380b38e05ae3364fa5e33"},
+]
 
 [[package]]
 name = "embody-serial"
@@ -2386,4 +2382,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "5bee000f633b643365c28f3973de25e5416be38adcfdf7f481f03041ea26adf0"
+content-hash = "be97bbbdfdca77f563612dd537e46a9177be24352c4433ea6686917747be9a78"
