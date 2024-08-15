@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "embody-ble"
-version = "1.1.17"
+version = "1.1.18"
 description = "Communicate with the EmBody device over BLE (bluetooth)"
 authors = ["Aidee Health AS <hello@aidee.io>"]
 license = "MIT"
@@ -21,7 +21,7 @@ Changelog = "https://github.com/aidee-health/embody-ble/releases"
 python = ">=3.9,<3.13"
 bleak = "^0.21.1"
 embody-codec = "^1.0.31"
-embody-serial = ">=1.0.28"
+embody-serial = ">=1.0.29"
 
 [tool.poetry.dev-dependencies]
 Pygments = ">=2.10.0"
@@ -41,7 +41,6 @@ pre-commit = ">=2.16.0"
 pre-commit-hooks = ">=4.1.0"
 pytest = ">=7.4.4"
 pyupgrade = ">=2.29.1"
-safety = ">=1.10.3"
 sphinx = ">=4.3.2"
 sphinx-autobuild = ">=2021.3.14"
 sphinx-click = ">=3.0.2"
