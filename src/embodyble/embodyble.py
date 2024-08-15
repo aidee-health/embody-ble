@@ -6,6 +6,7 @@ receiving response messages and subscribing for incoming messages from the devic
 
 import asyncio
 import logging
+import traceback
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 from typing import Optional
@@ -14,6 +15,7 @@ from bleak import BleakClient
 from bleak import BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from embodycodec import codec
+from embodycodec.exceptions import CrcError
 from embodyserial import embodyserial
 from embodyserial.helpers import EmbodySendHelper
 from packaging import version
@@ -112,6 +114,7 @@ class EmbodyBle(embodyserial.EmbodySender):
                 f"Could not find device with name {self.__device_name}"
             )
         self.__client = BleakClient(device, self._on_disconnected)
+        # self.__client._backend._mtu_size = 1497
         await self.__client.connect()
 
         logging.info(f"Connected: {self.__client}, mtu size: {self.__client.mtu_size}")
@@ -339,6 +342,7 @@ class _MessageReader:
         self.__message_listeners = message_listeners
         self.__ble_message_listeners = ble_message_listeners
         self.__response_message_listeners: list[ResponseMessageListener] = []
+        self.saved_data = bytearray()
 
     def stop(self) -> None:
         self.__message_listener_executor.shutdown(wait=False, cancel_futures=False)
@@ -364,15 +368,41 @@ class _MessageReader:
         New messages, both custom codec messages and BLE messages are received here.
         """
         logging.debug(f"New incoming data UART TX data: {bytes(data).hex()}")
-        try:
-            pos = 0
-            while pos < len(data):
+        if len(self.saved_data) > 0:
+            logging.debug(f"Adding saved data: {bytes(self.saved_data).hex()}")
+            data = self.saved_data + data
+            self.saved_data = bytearray()
+        pos = 0
+        while pos < len(data):
+            try:
                 msg = codec.decode(bytes(data[pos:]))
                 logging.debug(f"Decoded incoming UART message: {msg}")
                 self.__handle_incoming_message(msg)
                 pos += msg.length
-        except Exception as e:
-            logging.warning(f"Receive error during incoming message: {e}")
+            except BufferError as e:
+                # BufferError is sort of OK as we just need to aggregate the data for now?
+                logging.debug(
+                    f"Saving {len(data[pos:])} bytes for later parsing due to {e!r}."
+                )
+                self.saved_data = data[pos:]
+                break
+            except CrcError as e:
+                (msgtype, msglen) = codec.Message.get_meta(bytes(data[pos:]))
+                logging.warning(
+                    f"CRC error {e!r} at position {pos} for message type {hex(msgtype)} with length {msglen} in Data={data.hex()}"
+                )
+                pos += msglen  # Skip entire packet to resync, assuming fault is NOT in the length field!
+                continue
+            except Exception as e:
+                (msgtype, msglen) = codec.Message.get_meta(bytes(data[pos:]))
+                logging.warning(
+                    f"Receive error in on_uart_tx_data(): {e!r} at position {pos} of {len(data)} in Data={data.hex()}"
+                )
+                logging.warning(
+                    traceback.format_exception(Exception, e, e.__traceback__)
+                )
+                pos += msglen  # Skip message length to keep sync if message code was just unknown
+                continue
 
     def on_ble_message_received(
         self, uuid: BleakGATTCharacteristic, data: bytes
