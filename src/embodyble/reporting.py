@@ -147,6 +147,8 @@ class AttributeChangedListener:
     def on_autorec_changed(self, autorec: int) -> None:
         logging.info(f"Auto recording changed: {autorec}")
 
+    def on_flashinfo_changed(self, flashinfo: types.FlashInfo) -> None:
+        logging.info(f"Flash info changed: {flashinfo}")
 
 class AttributeChangedMessageListener(MessageListener, BleMessageListener):
     """MessageListener implementation delegating to high level callback interface."""
