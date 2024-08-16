@@ -295,6 +295,9 @@ class AttributeChangedMessageListener(MessageListener, BleMessageListener):
             elif isinstance(msg.value, attributes.DisableAutoRecAttribute):
                 for listener in self.__message_listeners:
                     listener.on_autorec_changed(msg.value.value)
+            elif isinstance(msg.value, attributes.FlashInfoAttribute):
+                for listener in self.__message_listeners:
+                    listener.on_flashinfo_changed(msg.value.value)
             else:
                 logging.warning("Unhandled attribute changed message: %s", msg)
         elif isinstance(msg, codec.RawPulseChanged):
