@@ -147,6 +147,9 @@ class AttributeChangedListener:
     def on_autorec_changed(self, autorec: int) -> None:
         logging.info(f"Auto recording changed: {autorec}")
 
+    def on_flashinfo_changed(self, flashinfo: types.FlashInfo) -> None:
+        logging.info(f"Flash info changed: {flashinfo}")
+
 
 class AttributeChangedMessageListener(MessageListener, BleMessageListener):
     """MessageListener implementation delegating to high level callback interface."""
@@ -295,6 +298,9 @@ class AttributeChangedMessageListener(MessageListener, BleMessageListener):
             elif isinstance(msg.value, attributes.DisableAutoRecAttribute):
                 for listener in self.__message_listeners:
                     listener.on_autorec_changed(msg.value.value)
+            elif isinstance(msg.value, attributes.FlashInfoAttribute):
+                for listener in self.__message_listeners:
+                    listener.on_flashinfo_changed(msg.value.value)
             else:
                 logging.warning("Unhandled attribute changed message: %s", msg)
         elif isinstance(msg, codec.RawPulseChanged):
