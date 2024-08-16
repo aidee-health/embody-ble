@@ -150,6 +150,7 @@ class AttributeChangedListener:
     def on_flashinfo_changed(self, flashinfo: types.FlashInfo) -> None:
         logging.info(f"Flash info changed: {flashinfo}")
 
+
 class AttributeChangedMessageListener(MessageListener, BleMessageListener):
     """MessageListener implementation delegating to high level callback interface."""
 
