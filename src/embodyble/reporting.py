@@ -157,7 +157,7 @@ class AttributeChangedMessageListener(MessageListener, BleMessageListener):
     def __init__(
         self, attr_changed_listener: Optional[AttributeChangedListener] = None
     ) -> None:
-        self.__message_listeners: list[AttributeChangedListener] = []
+        self.__message_listeners: set[AttributeChangedListener] = set()
         if attr_changed_listener is not None:
             self.add_attr_changed_listener(attr_changed_listener)
 

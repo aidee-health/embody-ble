@@ -355,8 +355,8 @@ class _MessageReader:
     def __init__(
         self,
         client: BleakClient,
-        message_listeners: list[MessageListener],
-        ble_message_listeners: list[BleMessageListener],
+        message_listeners: set[MessageListener],
+        ble_message_listeners: set[BleMessageListener],
     ) -> None:
         """Initialize MessageReader."""
         super().__init__()
