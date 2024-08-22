@@ -257,11 +257,15 @@ class EmbodyBle(embodyserial.EmbodySender):
     def add_response_message_listener(self, listener: ResponseMessageListener) -> None:
         self.__response_msg_listeners.add(listener)
 
-    def remove_response_message_listener(self, listener: ResponseMessageListener) -> None:
+    def remove_response_message_listener(
+        self, listener: ResponseMessageListener
+    ) -> None:
         try:
             self.__response_msg_listeners.remove(listener)
         except Exception as e:
-            logging.warning(f"Trying to remove response message listener {listener} but {e}")
+            logging.warning(
+                f"Trying to remove response message listener {listener} but {e}"
+            )
 
     def add_ble_message_listener(self, listener: BleMessageListener) -> None:
         self.__ble_message_listeners.add(listener)
@@ -280,7 +284,6 @@ class EmbodyBle(embodyserial.EmbodySender):
             self.__connection_listeners.remove(listener)
         except Exception as e:
             logging.warning(f"Trying to remove connection listener {listener} but {e}")
-
 
     def __notify_connection_listeners(self, connected: bool) -> None:
         if len(self.__connection_listeners) == 0:
@@ -504,4 +507,4 @@ class _MessageReader:
             logging.warning(f"Error notifying ble listener: {str(e)}", exc_info=True)
 
     def add_ble_message_listener(self, listener: BleMessageListener) -> None:
-        self.__ble_message_listeners.append(listener)
+        self.__ble_message_listeners.add(listener)

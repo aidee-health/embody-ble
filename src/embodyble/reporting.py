@@ -162,7 +162,7 @@ class AttributeChangedMessageListener(MessageListener, BleMessageListener):
             self.add_attr_changed_listener(attr_changed_listener)
 
     def add_attr_changed_listener(self, listener: AttributeChangedListener) -> None:
-        self.__message_listeners.append(listener)
+        self.__message_listeners.add(listener)
 
     def message_received(self, msg: codec.Message) -> None:
         """Process received message and delegate to listener callback."""
