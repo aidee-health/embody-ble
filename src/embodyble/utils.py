@@ -35,7 +35,7 @@ class FileReceiver(ResponseMessageListener):
     def response_message_received(self, msg: codec.Message) -> None:
         if isinstance(msg, codec.FileDataChunk):
             filechunk:codec.FileDataChunk = msg
-            logging.info(f"Received file chunk! offset={filechunk.offset} length={len(filechunk.file_data)}")
+            logging.debug(f"Received file chunk! offset={filechunk.offset} length={len(filechunk.file_data)}")
             done = False
             if self.receive == False: # Ignore all messages after we have rejected the transfer
                 return
@@ -56,7 +56,7 @@ class FileReceiver(ResponseMessageListener):
                 logging.warning(f"File '{self.filename}' received is longer than expected! Received {self.file_position} bytes of expected {self.file_length} at a rate of {self.file_datarate:.1f} bytes/s!")
                 done = True
             if self.file_position == self.file_length:
-                logging.warning(f"File '{self.filename}' complete at {self.file_position} bytes at a rate of {self.file_datarate:.1f} bytes/s!")
+                logging.info(f"File '{self.filename}' complete at {self.file_position} bytes at a rate of {self.file_datarate:.1f} bytes/s!")
                 done = True
             if (self.progress_callback != None):
                 self.progress_callback(self.filename, 100.0*(self.file_position/self.file_length))
@@ -72,7 +72,7 @@ class FileReceiver(ResponseMessageListener):
                  done_callback: Callable[[str, int, io.BufferedWriter, Exception],None] = None, # Callback to notify of completed download
                  progress_callback: Optional[Callable[[str, float], None]] = None # Callback to notify about progress
                  ) -> int:
-        if (self.datastream != None):
+        if self.receive == True:
             return -1
         self.filename = filename
         self.file_length = file_length
