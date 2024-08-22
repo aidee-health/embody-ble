@@ -59,18 +59,18 @@ class EmbodyBle(embodyserial.EmbodySender):
         self.__client: Optional[BleakClient] = None
         self.__reader: Optional[_MessageReader] = None
         self.__sender: Optional[_MessageSender] = None
-        self.__message_listeners: list[MessageListener] = []
+        self.__message_listeners: set[MessageListener] = set()
         if msg_listener:
-            self.__message_listeners.append(msg_listener)
-        self.__response_msg_listeners: list[ResponseMessageListener] = []
+            self.__message_listeners.add(msg_listener)
+        self.__response_msg_listeners: set[ResponseMessageListener] = set()
         if response_msg_listener:
-            self.__response_msg_listeners.append(response_msg_listener)
-        self.__ble_message_listeners: list[BleMessageListener] = []
+            self.__response_msg_listeners.add(response_msg_listener)
+        self.__ble_message_listeners: set[BleMessageListener] = set()
         if ble_msg_listener:
-            self.__ble_message_listeners.append(ble_msg_listener)
-        self.__connection_listeners: list[ConnectionListener] = []
+            self.__ble_message_listeners.add(ble_msg_listener)
+        self.__connection_listeners: set[ConnectionListener] = set()
         if connection_listener:
-            self.__connection_listeners.append(connection_listener)
+            self.__connection_listeners.add(connection_listener)
         self.__connection_listener_executor = ThreadPoolExecutor(
             max_workers=1, thread_name_prefix="conn-worker"
         )
@@ -246,13 +246,41 @@ class EmbodyBle(embodyserial.EmbodySender):
         )
 
     def add_message_listener(self, listener: MessageListener) -> None:
-        self.__message_listeners.append(listener)
+        self.__message_listeners.add(listener)
+
+    def remove_message_listener(self, listener: MessageListener) -> None:
+        try:
+            self.__message_listeners.remove(listener)
+        except Exception as e:
+            logging.warning(f"Trying to remove message listener {listener} but {e}")
+
+    def add_response_message_listener(self, listener: ResponseMessageListener) -> None:
+        self.__response_msg_listeners.add(listener)
+
+    def remove_response_message_listener(self, listener: ResponseMessageListener) -> None:
+        try:
+            self.__response_msg_listeners.remove(listener)
+        except Exception as e:
+            logging.warning(f"Trying to remove response message listener {listener} but {e}")
 
     def add_ble_message_listener(self, listener: BleMessageListener) -> None:
-        self.__ble_message_listeners.append(listener)
+        self.__ble_message_listeners.add(listener)
+
+    def remove_ble_message_listener(self, listener: BleMessageListener) -> None:
+        try:
+            self.__ble_message_listeners.remove(listener)
+        except Exception as e:
+            logging.warning(f"Trying to remove ble message listener {listener} but {e}")
 
     def add_connection_listener(self, listener: ConnectionListener) -> None:
-        self.__connection_listeners.append(listener)
+        self.__connection_listeners.add(listener)
+
+    def remove_connection_listener(self, listener: ConnectionListener) -> None:
+        try:
+            self.__connection_listeners.remove(listener)
+        except Exception as e:
+            logging.warning(f"Trying to remove connection listener {listener} but {e}")
+
 
     def __notify_connection_listeners(self, connected: bool) -> None:
         if len(self.__connection_listeners) == 0:
@@ -341,7 +369,7 @@ class _MessageReader:
         )
         self.__message_listeners = message_listeners
         self.__ble_message_listeners = ble_message_listeners
-        self.__response_message_listeners: list[ResponseMessageListener] = []
+        self.__response_message_listeners: set[ResponseMessageListener] = set()
         self.saved_data = bytearray()
 
     def stop(self) -> None:
@@ -439,7 +467,7 @@ class _MessageReader:
             logging.warning(f"Error notifying listener: {str(e)}", exc_info=True)
 
     def add_response_message_listener(self, listener: ResponseMessageListener) -> None:
-        self.__response_message_listeners.append(listener)
+        self.__response_message_listeners.add(listener)
 
     def __handle_response_message(self, msg: codec.Message) -> None:
         logging.debug(f"Handling new response message: {msg}")
