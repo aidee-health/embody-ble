@@ -69,7 +69,7 @@ class FileReceiver(ResponseMessageListener):
                  filename: str, # Used for callback to report the progress and completion
                  file_length: int, # File length that we trust is correct!
                  datastream: Optional[io.BufferedWriter] = None, # Stream to write data to as it arrives
-                 done_callback: Optional[Callable[[str, float],None]] = None, # Callback to notify of completed download
+                 done_callback: Callable[[str, int, io.BufferedWriter, Exception],None] = None, # Callback to notify of completed download
                  progress_callback: Optional[Callable[[str, float], None]] = None # Callback to notify about progress
                  ) -> int:
         if (self.datastream != None):
