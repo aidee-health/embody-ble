@@ -20,6 +20,7 @@ class FileReceiver(ResponseMessageListener):
         self,
         embody_ble: EmbodyBle,
     ) -> None:
+        logging.warning(f"Init FileReceiver {self}")
         self.embody_ble: EmbodyBle = embody_ble
         self.filename: str = ""
         self.file_length: int = 0
@@ -34,12 +35,14 @@ class FileReceiver(ResponseMessageListener):
         self.file_t1: int | float = 0
         self.receive = False
         self.embody_ble.add_response_message_listener(self)
-        logging.warning(f"Init FileReceiver {self}")
 
-    def __del__(self):
+    def stop_listening(self):
         """Cleans up tie-in with embody-ble"""
         self.embody_ble.remove_response_message_listener(self)
-        logging.warning(f"Destruct FileReceiver {self}")
+
+    def listen(self):
+        """Connects in with embody-ble"""
+        self.embody_ble.add_response_message_listener(self)
 
     def response_message_received(self, msg: codec.Message) -> None:
         if isinstance(msg, codec.FileDataChunk):
