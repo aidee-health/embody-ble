@@ -38,7 +38,7 @@ class FileReceiver(ResponseMessageListener):
 
     def stop_listening(self):
         """Cleans up tie-in with embody-ble"""
-        self.embody_ble.remove_response_message_listener(self)
+        self.embody_ble.discard_response_message_listener(self)
 
     def listen(self):
         """Connects in with embody-ble"""
