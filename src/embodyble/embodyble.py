@@ -6,8 +6,8 @@ receiving response messages and subscribing for incoming messages from the devic
 
 import asyncio
 import logging
-import traceback
 import threading
+import traceback
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 from typing import Optional
@@ -360,9 +360,9 @@ class _MessageReader:
     def __init__(
         self,
         client: BleakClient,
-        message_listeners: set[MessageListener] = set(),
-        ble_message_listeners: set[BleMessageListener] = set(),
-        response_message_listeners: set[ResponseMessageListener] = set(),
+        message_listeners: Optional[set[MessageListener]] = None,
+        ble_message_listeners: Optional[set[BleMessageListener]] = None,
+        response_message_listeners: Optional[set[ResponseMessageListener]] = None,
     ) -> None:
         """Initialize MessageReader."""
         super().__init__()
@@ -373,11 +373,20 @@ class _MessageReader:
         self.__ble_message_listener_executor = ThreadPoolExecutor(
             max_workers=1, thread_name_prefix="ble-msg-worker"
         )
-        self.__message_listeners = message_listeners
+        if message_listeners is not None:
+            self.__message_listeners = message_listeners
+        else:
+            self.__message_listeners = set()
         self.__message_listeners_lock = threading.Lock()
-        self.__ble_message_listeners = ble_message_listeners
+        if ble_message_listeners is not None:
+            self.__ble_message_listeners = ble_message_listeners
+        else:
+            self.__ble_message_listeners = set()
         self.__ble_message_listeners_lock = threading.Lock()
-        self.__response_message_listeners = response_message_listeners
+        if response_message_listeners is not None:
+            self.__response_message_listeners = response_message_listeners
+        else:
+            self.__response_message_listeners = set()
         self.__response_message_listeners_lock = threading.Lock()
         self.saved_data = bytearray()
 
