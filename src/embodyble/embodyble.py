@@ -56,9 +56,9 @@ class EmbodyBle(embodyserial.EmbodySender):
         response_msg_listener: Optional[ResponseMessageListener] = None,
     ) -> None:
         super().__init__()
-        self.__client: Optional[BleakClient] = None
-        self.__reader: Optional[_MessageReader] = None
-        self.__sender: Optional[_MessageSender] = None
+        self.__client: BleakClient | None = None
+        self.__reader: _MessageReader | None = None
+        self.__sender: _MessageSender | None = None
         self.__message_listeners: set[MessageListener] = set()
         if msg_listener:
             self.__message_listeners.add(msg_listener)
