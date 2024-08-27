@@ -110,9 +110,9 @@ class FileReceiver(ResponseMessageListener):
         self,
         filename: str,  # Used for callback to report the progress and completion
         file_length: int,  # File length that we trust is correct!
-        datastream: (
-            Optional[io.BufferedWriter] | None
-        ) = None,  # Stream to write data to as it arrives
+        datastream: Optional[
+            io.BufferedWriter
+        ] = None,  # Stream to write data to as it arrives
         done_callback: (
             Callable[[str, int, io.BufferedWriter | None, Exception | None], None]
             | None
