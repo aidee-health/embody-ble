@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 2
 
       - name: Run Labeler
-        uses: crazy-max/ghaction-github-labeler@v5.0.0
+        uses: crazy-max/ghaction-github-labeler@v5.1.0
         with:
           skip-delete: true
 
@@ -66,13 +66,13 @@ jobs:
 
       - name: Publish package on PyPI
         if: steps.check-version.outputs.tag
-        uses: pypa/gh-action-pypi-publish@v1.9.0
+        uses: pypa/gh-action-pypi-publish@v1.12.4
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
 
       - name: Publish the release notes
-        uses: release-drafter/release-drafter@v6.0.0
+        uses: release-drafter/release-drafter@v6.1.0
         with:
           publish: ${{ steps.check-version.outputs.tag != '' }}
           tag: ${{ steps.check-version.outputs.tag }}
