@@ -23,7 +23,7 @@ bleak = "^0.21.1"
 embody-codec = "^1.0.31"
 embody-serial = ">=1.0.29"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 Pygments = ">=2.10.0"
 black = ">=21.10b0"
 coverage = {extras = ["toml"], version = ">=6.2"}
