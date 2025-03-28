@@ -421,7 +421,9 @@ class _MessageReader:
         pos = 0
         while pos < len(data):
             try:
-                msg = codec.decode(bytes(data[pos:]))
+                msg = codec.decode(
+                    data=bytes(data[pos:]), accept_crc_error=True
+                )  # Set to False when only using FW>=5.4.0
                 logging.debug(f"Decoded incoming UART message: {msg}")
                 self.__handle_incoming_message(msg)
                 pos += msg.length
