@@ -555,30 +555,30 @@ files = [
 
 [[package]]
 name = "embody-codec"
-version = "1.0.31"
+version = "1.0.32"
 description = "Embody Codec"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "embody_codec-1.0.31-py3-none-any.whl", hash = "sha256:996d1319996a9b107bf5f2edc2280f7234ca9e28e5a7b3ac6924b1e53291f669"},
-    {file = "embody_codec-1.0.31.tar.gz", hash = "sha256:f6d808f7f3277c7bceab994a319d9401b0b7b7569a7380b38e05ae3364fa5e33"},
+    {file = "embody_codec-1.0.32-py3-none-any.whl", hash = "sha256:f0a4d4305caa6f09b4f4d88b4aaddc352b72aadd79c9cd76bd2973312f29ca58"},
+    {file = "embody_codec-1.0.32.tar.gz", hash = "sha256:2c6af19886cfc0edfeb2bc7b62cfbae29909a8947cf4329f60b0d9eae4373f05"},
 ]
 
 [[package]]
 name = "embody-serial"
-version = "1.0.33"
+version = "1.0.34"
 description = "Communicate with the embody device over a serial port"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "embody_serial-1.0.33-py3-none-any.whl", hash = "sha256:5a3848b2e11b66f5b06b51891803569b0890779bd8ffd404b9d8956ec570c38d"},
-    {file = "embody_serial-1.0.33.tar.gz", hash = "sha256:00c93fa472754e118405b64d392b8d6299e722c622b3d89296e13559bc178ec9"},
+    {file = "embody_serial-1.0.34-py3-none-any.whl", hash = "sha256:62c2e90c1c7173d69e22afdfdf65275a2f931bda4a0b7e9298e73b7fb3910bba"},
+    {file = "embody_serial-1.0.34.tar.gz", hash = "sha256:8bc587c299860f30b94d4d6283db921a6691e64e35b67acc6a37c2f51017598b"},
 ]
 
 [package.dependencies]
-embody-codec = ">=1.0.29"
+embody-codec = ">=1.0.32"
 pyserial = ">=3.5,<4.0"
 pytest = ">=7.4.2,<8.0.0"
 
@@ -1963,14 +1963,14 @@ test = ["coverage[toml] (>=7)", "mypy (>=1.2.0) ; platform_python_implementation
 
 [[package]]
 name = "typing-extensions"
-version = "4.12.2"
+version = "4.13.0"
 description = "Backported and Experimental Type Hints for Python 3.8+"
 optional = false
 python-versions = ">=3.8"
 groups = ["main", "dev"]
 files = [
-    {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
-    {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
+    {file = "typing_extensions-4.13.0-py3-none-any.whl", hash = "sha256:c8dd92cc0d6425a97c18fbb9d1954e5ff92c1ca881a309c45f06ebc0b79058e5"},
+    {file = "typing_extensions-4.13.0.tar.gz", hash = "sha256:0a4ac55a5820789d87e297727d229866c9650f6521b64206413c4fbada24d95b"},
 ]
 markers = {main = "python_version < \"3.12\""}
 
@@ -2486,4 +2486,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<3.13"
-content-hash = "2739369b89c610479a64afffa339356ad4ebddd2562093a56a562e283f5aeacf"
+content-hash = "25652fac5bf6705888d23ca3d05ea2f627cf3ed871673a9bb154a24c4f1078bc"
