@@ -19,7 +19,7 @@ Changelog = "https://github.com/aidee-health/embody-ble/releases"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
-bleak = "^0.21.1"
+bleak = ">=0.22.3"
 embody-codec = "^1.0.32"
 embody-serial = ">=1.0.34"
 
