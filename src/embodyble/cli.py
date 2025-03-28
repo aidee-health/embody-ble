@@ -147,7 +147,7 @@ def __list_files(send_helper: EmbodySendHelper):
     files = send_helper.get_files()
     if len(files) > 0:
         for name, size in files:
-            print(f"{name} ({round(size/1024)}KB)")
+            print(f"{name} ({round(size / 1024)}KB)")
     else:
         print("[]")
 
