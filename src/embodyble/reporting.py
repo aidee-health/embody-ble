@@ -3,8 +3,7 @@
 import logging
 import struct
 from datetime import datetime
-from datetime import timezone
-from typing import Optional
+from datetime import UTC
 
 from embodycodec import attributes
 from embodycodec import codec
@@ -37,9 +36,7 @@ class AttributeChangedListener:
         logging.info(f"Battery level changed: {battery_level}%")
 
     def on_imu_changed(self, orientation: int, activity_level: int) -> None:
-        logging.info(
-            f"IMU changed: orientation={orientation}, activity_level={activity_level}"
-        )
+        logging.info(f"IMU changed: orientation={orientation}, activity_level={activity_level}")
 
     def on_belt_on_body_changed(self, belt_on_body: bool) -> None:
         logging.info(f"Belt on body changed: {belt_on_body}")
@@ -62,9 +59,7 @@ class AttributeChangedListener:
     def on_sleep_mode_changed(self, sleep_mode: int) -> None:
         logging.info(f"Sleep mode changed: {sleep_mode}")
 
-    def on_imu_raw_changed(
-        self, acc_x: int, acc_y: int, acc_z: int, gyr_x: int, gyr_y: int, gyr_z: int
-    ) -> None:
+    def on_imu_raw_changed(self, acc_x: int, acc_y: int, acc_z: int, gyr_x: int, gyr_y: int, gyr_z: int) -> None:
         logging.info(
             f"IMU raw changed: acc_x={acc_x}, acc_y={acc_y}, acc_z={acc_z}, gyr_x={gyr_x}, gyr_y={gyr_y}, gyr_z={gyr_z}"
         )
@@ -125,10 +120,10 @@ class AttributeChangedListener:
         led4: int,
         off_dac1: int,
         relative_gain: float,
-        led2: Optional[int],
-        led3: Optional[int],
-        off_dac2: Optional[int],
-        off_dac3: Optional[int],
+        led2: int | None,
+        led3: int | None,
+        off_dac2: int | None,
+        off_dac3: int | None,
     ) -> None:
         logging.info(
             f"AFE settings changed: rf_gain={rf_gain}, cf_value={cf_value}, ecg_gain={ecg_gain}, "
@@ -140,9 +135,7 @@ class AttributeChangedListener:
         logging.info(f"ECGs and PPGs changed: ecgs={ecgs}, ppgs={ppgs}")
 
     def on_on_body_detection_changed(self, on_body_detection: bool) -> None:
-        logging.info(
-            f"On body detection {'activated' if on_body_detection else 'deactivated'}"
-        )
+        logging.info(f"On body detection {'activated' if on_body_detection else 'deactivated'}")
 
     def on_autorec_changed(self, autorec: int) -> None:
         logging.info(f"Auto recording changed: {autorec}")
@@ -154,9 +147,7 @@ class AttributeChangedListener:
 class AttributeChangedMessageListener(MessageListener, BleMessageListener):
     """MessageListener implementation delegating to high level callback interface."""
 
-    def __init__(
-        self, attr_changed_listener: Optional[AttributeChangedListener] = None
-    ) -> None:
+    def __init__(self, attr_changed_listener: AttributeChangedListener | None = None) -> None:
         self.__message_listeners: set[AttributeChangedListener] = set()
         if attr_changed_listener is not None:
             self.add_attr_changed_listener(attr_changed_listener)
@@ -277,19 +268,11 @@ class AttributeChangedMessageListener(MessageListener, BleMessageListener):
                         msg.value.value.rf_gain if msg.value.value.rf_gain else 0,
                         msg.value.value.cf_value if msg.value.value.cf_value else 0,
                         msg.value.value.ecg_gain if msg.value.value.ecg_gain else 0,
-                        (
-                            msg.value.value.ioffdac_range
-                            if msg.value.value.ioffdac_range
-                            else 0
-                        ),
+                        (msg.value.value.ioffdac_range if msg.value.value.ioffdac_range else 0),
                         msg.value.value.led1 if msg.value.value.led1 else 0,
                         msg.value.value.led4 if msg.value.value.led4 else 0,
                         msg.value.value.off_dac1 if msg.value.value.off_dac1 else 0,
-                        (
-                            msg.value.value.relative_gain
-                            if msg.value.value.relative_gain
-                            else 0
-                        ),
+                        (msg.value.value.relative_gain if msg.value.value.relative_gain else 0),
                         msg.value.value.led2,
                         msg.value.value.led3,
                         msg.value.value.off_dac2,
@@ -306,9 +289,7 @@ class AttributeChangedMessageListener(MessageListener, BleMessageListener):
         elif isinstance(msg, codec.RawPulseChanged):
             if isinstance(msg.value, attributes.PulseRawAttribute):
                 for listener in self.__message_listeners:
-                    listener.on_ecgs_ppgs_changed(
-                        [msg.value.value.ecg], [msg.value.value.ppg]
-                    )
+                    listener.on_ecgs_ppgs_changed([msg.value.value.ecg], [msg.value.value.ppg])
             elif isinstance(msg.value, attributes.PulseRawAllAttribute):
                 for listener in self.__message_listeners:
                     listener.on_ecgs_ppgs_changed(
@@ -321,9 +302,7 @@ class AttributeChangedMessageListener(MessageListener, BleMessageListener):
                     )
         elif isinstance(msg, codec.RawPulseListChanged):
             for listener in self.__message_listeners:
-                listener.on_ecgs_ppgs_changed(
-                    msg.value.value.ecgs, msg.value.value.ppgs
-                )
+                listener.on_ecgs_ppgs_changed(msg.value.value.ecgs, msg.value.value.ppgs)
         else:
             logging.warning("Unhandled message: %s", msg)
 
@@ -343,96 +322,68 @@ class EmbodyReporter:
     def __init__(
         self,
         embody_ble: EmbodyBle,
-        attr_changed_listener: Optional[AttributeChangedListener] = None,
+        attr_changed_listener: AttributeChangedListener | None = None,
     ) -> None:
         self.__embody_ble = embody_ble
         self.__attribute_changed_message_listener = AttributeChangedMessageListener(
             attr_changed_listener=attr_changed_listener
         )
-        self.__embody_ble.add_message_listener(
-            self.__attribute_changed_message_listener
-        )
-        self.__embody_ble.add_ble_message_listener(
-            self.__attribute_changed_message_listener
-        )
+        self.__embody_ble.add_message_listener(self.__attribute_changed_message_listener)
+        self.__embody_ble.add_ble_message_listener(self.__attribute_changed_message_listener)
 
-    def add_attribute_changed_listener(
-        self, attr_changed_listener: AttributeChangedListener
-    ) -> None:
-        self.__attribute_changed_message_listener.add_attr_changed_listener(
-            attr_changed_listener
-        )
+    def add_attribute_changed_listener(self, attr_changed_listener: AttributeChangedListener) -> None:
+        self.__attribute_changed_message_listener.add_attr_changed_listener(attr_changed_listener)
 
     def start_battery_level_reporting(self, int_seconds: int) -> None:
-        self.__send_configure_reporting(
-            attributes.BatteryLevelAttribute.attribute_id, int_seconds
-        )
+        self.__send_configure_reporting(attributes.BatteryLevelAttribute.attribute_id, int_seconds)
 
     def stop_battery_level_reporting(self) -> None:
         self.__send_reset_reporting(attributes.BatteryLevelAttribute.attribute_id)
 
     def start_imu_reporting(self, int_millis: int) -> None:
-        self.__send_configure_reporting(
-            attributes.ImuAttribute.attribute_id, int_millis
-        )
+        self.__send_configure_reporting(attributes.ImuAttribute.attribute_id, int_millis)
 
     def stop_imu_reporting(self) -> None:
         self.__send_reset_reporting(attributes.ImuAttribute.attribute_id)
 
     def start_belt_on_body_reporting(self, int_millis: int = 0) -> None:
-        self.__send_configure_reporting(
-            attributes.BeltOnBodyStateAttribute.attribute_id, int_millis
-        )
+        self.__send_configure_reporting(attributes.BeltOnBodyStateAttribute.attribute_id, int_millis)
 
     def stop_belt_on_body_reporting(self) -> None:
         self.__send_reset_reporting(attributes.BeltOnBodyStateAttribute.attribute_id)
 
     def start_breath_rate_reporting(self, int_millis: int) -> None:
-        self.__send_configure_reporting(
-            attributes.BreathRateAttribute.attribute_id, int_millis
-        )
+        self.__send_configure_reporting(attributes.BreathRateAttribute.attribute_id, int_millis)
 
     def stop_breath_rate_reporting(self) -> None:
         self.__send_reset_reporting(attributes.BreathRateAttribute.attribute_id)
 
     def start_heart_rate_variability_reporting(self, int_millis: int) -> None:
-        self.__send_configure_reporting(
-            attributes.HeartRateVariabilityAttribute.attribute_id, int_millis
-        )
+        self.__send_configure_reporting(attributes.HeartRateVariabilityAttribute.attribute_id, int_millis)
 
     def stop_heart_rate_variability_reporting(self) -> None:
-        self.__send_reset_reporting(
-            attributes.HeartRateVariabilityAttribute.attribute_id
-        )
+        self.__send_reset_reporting(attributes.HeartRateVariabilityAttribute.attribute_id)
 
     def start_heart_rate_reporting(self, int_millis: int = 0) -> None:
-        self.__send_configure_reporting(
-            attributes.HeartrateAttribute.attribute_id, int_millis
-        )
+        self.__send_configure_reporting(attributes.HeartrateAttribute.attribute_id, int_millis)
 
     def stop_heart_rate_reporting(self) -> None:
         self.__send_reset_reporting(attributes.HeartrateAttribute.attribute_id)
 
     def start_heart_rate_interval_reporting(self, int_millis: int = 0) -> None:
-        self.__send_configure_reporting(
-            attributes.HeartRateIntervalAttribute.attribute_id, int_millis
-        )
+        self.__send_configure_reporting(attributes.HeartRateIntervalAttribute.attribute_id, int_millis)
 
     def stop_heart_rate_interval_reporting(self) -> None:
         self.__send_reset_reporting(attributes.HeartRateIntervalAttribute.attribute_id)
 
     def start_charge_state_reporting(self, int_seconds: int = 0) -> None:
-        self.__send_configure_reporting(
-            attributes.ChargeStateAttribute.attribute_id, int_seconds
-        )
+        self.__send_configure_reporting(attributes.ChargeStateAttribute.attribute_id, int_seconds)
 
     def stop_charge_state_reporting(self) -> None:
         self.__send_reset_reporting(attributes.ChargeStateAttribute.attribute_id)
 
     def start_sleep_mode_reporting(self, int_seconds: int = 0) -> None:
-        self.__send_configure_reporting(
-            attributes.SleepModeAttribute.attribute_id, int_seconds
-        )
+        self.__send_configure_reporting(attributes.SleepModeAttribute.attribute_id, int_seconds)
 
     def stop_sleep_mode_reporting(self) -> None:
         self.__send_reset_reporting(attributes.SleepModeAttribute.attribute_id)
@@ -456,74 +407,52 @@ class EmbodyReporter:
         self.__send_reset_reporting(attributes.GyroRawAttribute.attribute_id)
 
     def start_recording_reporting(self) -> None:
-        self.__send_configure_reporting(
-            attributes.MeasurementDeactivatedAttribute.attribute_id, 1
-        )
+        self.__send_configure_reporting(attributes.MeasurementDeactivatedAttribute.attribute_id, 1)
 
     def stop_recording_reporting(self) -> None:
-        self.__send_reset_reporting(
-            attributes.MeasurementDeactivatedAttribute.attribute_id
-        )
+        self.__send_reset_reporting(attributes.MeasurementDeactivatedAttribute.attribute_id)
 
     def start_temperature_reporting(self, int_seconds: int) -> None:
-        self.__send_configure_reporting(
-            attributes.TemperatureAttribute.attribute_id, int_seconds
-        )
+        self.__send_configure_reporting(attributes.TemperatureAttribute.attribute_id, int_seconds)
 
     def stop_temperature_reporting(self) -> None:
         self.__send_reset_reporting(attributes.TemperatureAttribute.attribute_id)
 
     def start_leds_reporting(self, int_millis: int) -> None:
-        self.__send_configure_reporting(
-            attributes.LedsAttribute.attribute_id, int_millis
-        )
+        self.__send_configure_reporting(attributes.LedsAttribute.attribute_id, int_millis)
 
     def stop_leds_reporting(self) -> None:
         self.__send_reset_reporting(attributes.LedsAttribute.attribute_id)
 
     def start_firmware_update_reporting(self, int_seconds: int) -> None:
-        self.__send_configure_reporting(
-            attributes.FirmwareUpdateProgressAttribute.attribute_id, int_seconds
-        )
+        self.__send_configure_reporting(attributes.FirmwareUpdateProgressAttribute.attribute_id, int_seconds)
 
     def stop_firmware_update_reporting(self) -> None:
-        self.__send_reset_reporting(
-            attributes.FirmwareUpdateProgressAttribute.attribute_id
-        )
+        self.__send_reset_reporting(attributes.FirmwareUpdateProgressAttribute.attribute_id)
 
     def start_diagnostics_reporting(self, int_millis: int) -> None:
-        self.__send_configure_reporting(
-            attributes.DiagnosticsAttribute.attribute_id, int_millis
-        )
+        self.__send_configure_reporting(attributes.DiagnosticsAttribute.attribute_id, int_millis)
 
     def stop_diagnostics_reporting(self) -> None:
         self.__send_reset_reporting(attributes.DiagnosticsAttribute.attribute_id)
 
     def start_flash_reporting(self, int_millis: int) -> None:
-        self.__send_configure_reporting(
-            attributes.FlashInfoAttribute.attribute_id, int_millis
-        )
+        self.__send_configure_reporting(attributes.FlashInfoAttribute.attribute_id, int_millis)
 
     def stop_flash_reporting(self) -> None:
         self.__send_reset_reporting(attributes.FlashInfoAttribute.attribute_id)
 
     def start_afe_settings_reporting(self, int_millis: int) -> None:
-        self.__send_configure_reporting(
-            attributes.AfeSettingsAllAttribute.attribute_id, int_millis
-        )
+        self.__send_configure_reporting(attributes.AfeSettingsAllAttribute.attribute_id, int_millis)
 
     def stop_afe_settings_reporting(self) -> None:
         self.__send_reset_reporting(attributes.AfeSettingsAllAttribute.attribute_id)
 
     def start_single_ecg_ppg_reporting(self, int_millis: int) -> None:
-        self.__send_configure_reporting(
-            attributes.PulseRawAttribute.attribute_id, int_millis
-        )
+        self.__send_configure_reporting(attributes.PulseRawAttribute.attribute_id, int_millis)
 
     def start_ecg_ppg_reporting(self, int_millis: int) -> None:
-        self.__send_configure_reporting(
-            attributes.PulseRawAllAttribute.attribute_id, int_millis
-        )
+        self.__send_configure_reporting(attributes.PulseRawAllAttribute.attribute_id, int_millis)
 
     def stop_ecg_ppg_reporting(self) -> None:
         self.__send_reset_reporting(attributes.PulseRawAttribute.attribute_id)
@@ -552,9 +481,7 @@ class EmbodyReporter:
         self.stop_temperature_reporting()
         self.stop_flash_reporting()
 
-    def __send_configure_reporting(
-        self, attribute_id: int, interval: int, reporting_mode: int = 0x01
-    ) -> None:
+    def __send_configure_reporting(self, attribute_id: int, interval: int, reporting_mode: int = 0x01) -> None:
         self.__embody_ble.send(
             codec.ConfigureReporting(
                 attribute_id,
@@ -568,9 +495,7 @@ class EmbodyReporter:
     # BLE specific methods ###
 
     def read_ble_manufacturer_name(self) -> str:
-        manufacturer_name = self.__embody_ble.request_ble_attribute(
-            MANUFACTURER_NAME_UUID
-        )
+        manufacturer_name = self.__embody_ble.request_ble_attribute(MANUFACTURER_NAME_UUID)
         return str(manufacturer_name, "ascii")
 
     def read_ble_serial_no(self) -> str:
@@ -590,9 +515,7 @@ class EmbodyReporter:
         return convert_from_gatt_current_time(current_time)
 
     def write_ble_current_time(self, timestamp: datetime) -> None:
-        self.__embody_ble.write_ble_attribute(
-            CURRENT_TIME_UUID, convert_to_gatt_current_time(timestamp)
-        )
+        self.__embody_ble.write_ble_attribute(CURRENT_TIME_UUID, convert_to_gatt_current_time(timestamp))
 
     def start_ble_battery_level_reporting(self) -> None:
         self.__embody_ble.start_ble_notify(BATTERY_LEVEL_UUID)
@@ -603,13 +526,11 @@ class EmbodyReporter:
 
 def convert_to_gatt_current_time(timestamp: datetime) -> bytes:
     """Accessory function to convert a datetime object to a GATT current time byte array."""
-    dt = timestamp.astimezone(timezone.utc)
-    return struct.pack(
-        "<hbbbbb", dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second
-    )
+    dt = timestamp.astimezone(UTC)
+    return struct.pack("<hbbbbb", dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
 
 
 def convert_from_gatt_current_time(time_bytes: bytes) -> datetime:
     """Accessory function to convert a GATT current time byte array to a datetime object."""
     year, month, day, hour, minute, second = struct.unpack("<hbbbbb", time_bytes[0:7])
-    return datetime(year, month, day, hour, minute, second, tzinfo=timezone.utc)
+    return datetime(year, month, day, hour, minute, second, tzinfo=UTC)
