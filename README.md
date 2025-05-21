@@ -33,7 +33,7 @@
 
 ## Requirements
 
-- Python 3.9-3.11
+- Python 3.11-3.13
 - Access to private Aidee Health repositories on Github
 
 ## Installation
@@ -150,4 +150,3 @@ please [file an issue] along with a detailed description.
 
 [license]: https://github.com/aidee-health/embody-ble/blob/main/LICENSE
 [contributor guide]: https://github.com/aidee-health/embody-ble/blob/main/CONTRIBUTING.md
-[command-line reference]: https://embody-ble.readthedocs.io/en/latest/usage.html

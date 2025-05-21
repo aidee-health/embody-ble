@@ -31,9 +31,7 @@ def attribute_changed_message_listener(
     attribute_changed_listener: AttributeChangedListener,
 ) -> AttributeChangedMessageListener:
     """Return an instance of AttributeChangedMessageListener."""
-    return AttributeChangedMessageListener(
-        attr_changed_listener=attribute_changed_listener
-    )
+    return AttributeChangedMessageListener(attr_changed_listener=attribute_changed_listener)
 
 
 def test_attribute_changed_message_for_battery_level(

@@ -3,8 +3,7 @@
 import io
 import logging
 import time
-from typing import Callable
-from typing import Optional
+from collections.abc import Callable
 
 from embodycodec import codec
 from embodycodec import types
@@ -25,10 +24,7 @@ class FileReceiver(ResponseMessageListener):
         self.filename: str = ""
         self.file_length: int = 0
         self.datastream: io.BufferedWriter | None = None
-        self.done_callback: (
-            Callable[[str, int, io.BufferedWriter | None, Exception | None], None]
-            | None
-        ) = None
+        self.done_callback: Callable[[str, int, io.BufferedWriter | None, Exception | None], None] | None = None
         self.progress_callback: Callable[[str, float], None] | None = None
         self.file_position = 0
         self.file_t0: int | float = 0
@@ -47,13 +43,9 @@ class FileReceiver(ResponseMessageListener):
     def response_message_received(self, msg: codec.Message) -> None:
         if isinstance(msg, codec.FileDataChunk):
             filechunk: codec.FileDataChunk = msg
-            logging.debug(
-                f"Received file chunk! offset={filechunk.offset} length={len(filechunk.file_data)}"
-            )
+            logging.debug(f"Received file chunk! offset={filechunk.offset} length={len(filechunk.file_data)}")
             done = False
-            if (
-                self.receive is False
-            ):  # Ignore all messages after we have rejected the transfer
+            if self.receive is False:  # Ignore all messages after we have rejected the transfer
                 return
             if self.file_position != filechunk.offset:
                 logging.error(
@@ -96,30 +88,21 @@ class FileReceiver(ResponseMessageListener):
                 )
                 done = True
             if self.progress_callback is not None:
-                self.progress_callback(
-                    self.filename, 100.0 * (self.file_position / self.file_length)
-                )
+                self.progress_callback(self.filename, 100.0 * (self.file_position / self.file_length))
             if done:  # Report completion and clean up
                 if self.done_callback is not None:
-                    self.done_callback(
-                        self.filename, self.file_position, self.datastream, None
-                    )
+                    self.done_callback(self.filename, self.file_position, self.datastream, None)
                 self.receive = False
 
     def get_file(
         self,
         filename: str,  # Used for callback to report the progress and completion
         file_length: int,  # File length that we trust is correct!
-        datastream: Optional[
-            io.BufferedWriter
-        ] = None,  # Stream to write data to as it arrives
+        datastream: io.BufferedWriter | None = None,  # Stream to write data to as it arrives
         done_callback: (
-            Callable[[str, int, io.BufferedWriter | None, Exception | None], None]
-            | None
+            Callable[[str, int, io.BufferedWriter | None, Exception | None], None] | None
         ) = None,  # Callback to notify of completed download
-        progress_callback: (
-            Optional[Callable[[str, float], None]] | None
-        ) = None,  # Callback to notify about progress
+        progress_callback: (Callable[[str, float], None] | None | None) = None,  # Callback to notify about progress
     ) -> int:
         if self.receive is True:
             return -1
