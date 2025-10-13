@@ -128,6 +128,35 @@ embody-ble --list-files
 embody-ble --set-time
 ```
 
+## Logging
+
+This library uses Python's standard logging module and follows best practices for libraries:
+
+### For Library Users
+
+The library is **silent by default** - it won't produce any output unless you configure logging. To enable logging from the library:
+
+```python
+import logging
+
+# Enable INFO level logging for embodyble
+logging.getLogger('embodyble').setLevel(logging.INFO)
+logging.getLogger('embodyble').addHandler(logging.StreamHandler())
+
+# Or configure specific modules
+logging.getLogger('embodyble.embodyble').setLevel(logging.DEBUG)
+```
+
+### For CLI Users
+
+The CLI configures logging automatically. Use `--log-level` to control verbosity:
+
+```bash
+embody-ble --log-level DEBUG --list-devices
+```
+
+Available levels: CRITICAL, WARNING, INFO, DEBUG
+
 ## Troubleshooting
 
 No known issues registered.

@@ -13,6 +13,8 @@ from embodyble.embodyble import EmbodyBle
 from embodyble.listeners import BleMessageListener
 from embodyble.listeners import MessageListener
 
+logger = logging.getLogger(__name__)
+
 
 SYSTEM_ID_UUID = "00002A23-0000-1000-8000-00805f9b34fb"
 MODEL_NBR_UUID = "00002A24-0000-1000-8000-00805f9b34fb"
@@ -285,7 +287,7 @@ class AttributeChangedMessageListener(MessageListener, BleMessageListener):
                 for listener in self.__message_listeners:
                     listener.on_flashinfo_changed(msg.value.value)
             else:
-                logging.warning("Unhandled attribute changed message: %s", msg)
+                logger.warning("Unhandled attribute changed message: %s", msg)
         elif isinstance(msg, codec.RawPulseChanged):
             if isinstance(msg.value, attributes.PulseRawAttribute):
                 for listener in self.__message_listeners:
@@ -304,7 +306,7 @@ class AttributeChangedMessageListener(MessageListener, BleMessageListener):
             for listener in self.__message_listeners:
                 listener.on_ecgs_ppgs_changed(msg.value.value.ecgs, msg.value.value.ppgs)
         else:
-            logging.warning("Unhandled message: %s", msg)
+            logger.warning("Unhandled message: %s", msg)
 
     def ble_message_received(self, uuid: str, data: bytes) -> None:
         """Process received message"""
