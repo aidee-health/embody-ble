@@ -450,12 +450,14 @@ class _MessageReader:
     def add_response_message_listener(self, listener: ResponseMessageListener) -> None:
         with self.__response_message_listeners_lock:
             self.__response_message_listeners.add(listener)
-        logger.warning(f"{listener!r} was added to response message listener set!")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"{listener!r} was added to response message listener set!")
 
     def discard_response_message_listener(self, listener: ResponseMessageListener) -> None:
         with self.__response_message_listeners_lock:
             self.__response_message_listeners.discard(listener)
-        logger.warning(f"{listener!r} was removed from response message listener set!")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"{listener!r} was removed from response message listener set!")
 
     def add_ble_message_listener(self, listener: BleMessageListener) -> None:
         with self.__ble_message_listeners_lock:
