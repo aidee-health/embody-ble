@@ -295,12 +295,12 @@ class _MessageSender(ResponseMessageListener):
         timeout: int | None = 5,
     ) -> codec.Message | None:
         async with self.__send_lock:
+            data = msg.encode()
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f"Sending message: {msg}, encoded: {msg.encode().hex()}")
+                logger.debug(f"Sending message: {msg}, encoded: {data.hex()}")
             try:
                 self.__response_event.clear()
                 self.__current_response_message = None
-                data = msg.encode()
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f"Sending message over BLE: {msg}")
                 await self.__client.write_gatt_char(UART_RX_CHAR_UUID, data)
@@ -310,8 +310,8 @@ class _MessageSender(ResponseMessageListener):
             if wait_for_response:
                 try:
                     await asyncio.wait_for(self.__response_event.wait(), timeout)
-                except TimeoutError:
-                    logger.warning("Timeout waiting for response message")
+                except TimeoutError as e:
+                    logger.warning(f"Timeout waiting for response message: {e!s}", exc_info=False)
                     return None
             return self.__current_response_message
 
@@ -406,7 +406,7 @@ class _MessageReader:
                 logger.warning(
                     f"Receive error in on_uart_tx_data(): {e!r} at position {pos} of {len(data)} in Data={data.hex()}"
                 )
-                logger.warning(traceback.format_exception(Exception, e, e.__traceback__))
+                logger.warning("".join(traceback.format_exception(Exception, e, e.__traceback__)))
                 pos += msglen  # Skip message length to keep sync if message code was just unknown
                 continue
 

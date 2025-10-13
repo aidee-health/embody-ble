@@ -25,8 +25,8 @@ def configure_library_logging(
     if not logger.handlers:
         handler = logging.StreamHandler()
 
-        if format_string:
-            formatter = logging.Formatter(format_string, datefmt=datefmt)
-            handler.setFormatter(formatter)
+        fmt = format_string if format_string is not None else logging.BASIC_FORMAT
+        formatter = logging.Formatter(fmt, datefmt=datefmt)
+        handler.setFormatter(formatter)
 
         logger.addHandler(handler)
