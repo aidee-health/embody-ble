@@ -12,8 +12,11 @@ from embodyserial.helpers import EmbodySendHelper
 
 from . import __version__
 from .embodyble import EmbodyBle
+from .logging import configure_library_logging
 from .reporting import AttributeChangedListener
 from .reporting import EmbodyReporter
+
+logger = logging.getLogger(__name__)
 
 
 get_attributes_dict: dict[str, str] = {
@@ -60,9 +63,10 @@ def main(args=None):
         args = sys.argv[1:]
 
     parsed_args = __get_args(args)
-    logging.basicConfig(
+    configure_library_logging(
         level=getattr(logging, parsed_args.log_level.upper(), logging.INFO),
-        format="%(asctime)s:%(levelname)s:%(message)s",
+        format_string="%(asctime)s:%(levelname)s:%(message)s",
+        datefmt="%H:%M:%S",
     )
     embody_ble = EmbodyBle()
     try:

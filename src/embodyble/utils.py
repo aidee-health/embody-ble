@@ -11,6 +11,8 @@ from embodycodec import types
 from embodyble.embodyble import EmbodyBle
 from embodyble.listeners import ResponseMessageListener
 
+logger = logging.getLogger(__name__)
+
 
 class FileReceiver(ResponseMessageListener):
     """Utility class to handle messages related to file transfer over BLE"""
@@ -19,7 +21,7 @@ class FileReceiver(ResponseMessageListener):
         self,
         embody_ble: EmbodyBle,
     ) -> None:
-        logging.warning(f"Init FileReceiver {self}")
+        logger.warning(f"Init FileReceiver {self}")
         self.embody_ble: EmbodyBle = embody_ble
         self.filename: str = ""
         self.file_length: int = 0
@@ -43,12 +45,13 @@ class FileReceiver(ResponseMessageListener):
     def response_message_received(self, msg: codec.Message) -> None:
         if isinstance(msg, codec.FileDataChunk):
             filechunk: codec.FileDataChunk = msg
-            logging.debug(f"Received file chunk! offset={filechunk.offset} length={len(filechunk.file_data)}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Received file chunk! offset={filechunk.offset} length={len(filechunk.file_data)}")
             done = False
             if self.receive is False:  # Ignore all messages after we have rejected the transfer
                 return
             if self.file_position != filechunk.offset:
-                logging.error(
+                logger.error(
                     "Discarding out of order file chunk of "
                     + f"{len(filechunk.file_data)} bytes for offset "
                     + f"{filechunk.offset} when expecting offset {self.file_position}"
@@ -68,22 +71,23 @@ class FileReceiver(ResponseMessageListener):
                 return
             if self.datastream is not None:
                 self.datastream.write(filechunk.file_data)
-            logging.debug(
-                f"Added {len(filechunk.file_data)} bytes at offset {filechunk.offset} to fileref {filechunk.fileref}"
-            )
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    f"Added {len(filechunk.file_data)} bytes at offset {filechunk.offset} to fileref {filechunk.fileref}"
+                )
             self.file_position += len(filechunk.file_data)
             if self.file_position >= self.file_length:
                 self.file_t1 = time.perf_counter()
                 self.file_datarate = self.file_position / (self.file_t1 - self.file_t0)
             if self.file_position > self.file_length:
-                logging.warning(
+                logger.warning(
                     f"File {self.filename!r} received is longer than expected! "
                     + f"Received {self.file_position} bytes of expected {self.file_length} "
                     + f"at a rate of {self.file_datarate:.1f} bytes/s!"
                 )
                 done = True
             if self.file_position == self.file_length:
-                logging.info(
+                logger.info(
                     f"File {self.filename!r} complete at {self.file_position} bytes at a rate of {self.file_datarate:.1f} bytes/s!"
                 )
                 done = True

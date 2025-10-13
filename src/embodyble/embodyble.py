@@ -26,6 +26,7 @@ from .listeners import ConnectionListener
 from .listeners import MessageListener
 from .listeners import ResponseMessageListener
 
+logger = logging.getLogger(__name__)
 
 UART_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 UART_RX_CHAR_UUID = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
@@ -94,7 +95,7 @@ class EmbodyBle(embodyserial.EmbodySender):
             self.__device_name = device_name
         else:
             self.__device_name = self.__find_name_from_serial_port()
-        logging.info(f"Using EmBody device name: {self.__device_name}")
+        logger.info(f"Using EmBody device name: {self.__device_name}")
         scanner = BleakScanner()
 
         device = await scanner.find_device_by_filter(
@@ -107,7 +108,7 @@ class EmbodyBle(embodyserial.EmbodySender):
         # self.__client._backend._mtu_size = 1497
         await self.__client.connect()
 
-        logging.info(f"Connected: {self.__client}, mtu size: {self.__client.mtu_size}")
+        logger.info(f"Connected: {self.__client}, mtu size: {self.__client.mtu_size}")
         self.__reader = _MessageReader(
             self.__client,
             self.__message_listeners,
@@ -118,7 +119,8 @@ class EmbodyBle(embodyserial.EmbodySender):
         self.__reader.add_response_message_listener(self.__sender)
         await self.__client.start_notify(UART_TX_CHAR_UUID, self.__reader.on_uart_tx_data)
         self.__notify_connection_listeners(True)
-        logging.debug(f"Async connect completed: {self.__client}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Async connect completed: {self.__client}")
 
     def disconnect(self) -> None:
         asyncio.run_coroutine_threadsafe(self.__async_disconnect(), self.__loop).result()
@@ -129,9 +131,9 @@ class EmbodyBle(embodyserial.EmbodySender):
             try:
                 await self.__client.stop_notify(UART_TX_CHAR_UUID)
             except Exception as e:
-                logging.debug(f"Failed to stop notify UART_TX:: {e}")
+                logger.debug(f"Failed to stop notify UART_TX:: {e}")
             await self.__client.disconnect()
-            logging.info(f"Disconnected: {self.__client}")
+            logger.info(f"Disconnected: {self.__client}")
             if self.__reader:
                 self.__reader.stop()
                 self.__reader = None
@@ -179,7 +181,7 @@ class EmbodyBle(embodyserial.EmbodySender):
 
     def _on_disconnected(self, client: BleakClient) -> None:
         """Invoked by bleak when disconnected."""
-        logging.info(f"Disconnected: {client}")
+        logger.info(f"Disconnected: {client}")
         self.__notify_connection_listeners(False)
         if self.__reader:
             self.__reader.stop()
@@ -261,7 +263,7 @@ class EmbodyBle(embodyserial.EmbodySender):
         try:
             listener.on_connected(connected)
         except Exception as e:
-            logging.warning(f"Error notifying connection listener: {e!s}", exc_info=True)
+            logger.warning(f"Error notifying connection listener: {e!s}", exc_info=True)
 
 
 class _MessageSender(ResponseMessageListener):
@@ -281,7 +283,8 @@ class _MessageSender(ResponseMessageListener):
 
         Sets the local response message and notifies the waiting sender thread
         """
-        logging.debug(f"Response message received: {msg}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Response message received: {msg}")
         self.__current_response_message = msg
         self.__response_event.set()
 
@@ -292,21 +295,23 @@ class _MessageSender(ResponseMessageListener):
         timeout: int | None = 5,
     ) -> codec.Message | None:
         async with self.__send_lock:
-            logging.debug(f"Sending message: {msg}, encoded: {msg.encode().hex()}")
+            data = msg.encode()
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Sending message: {msg}, encoded: {data.hex()}")
             try:
                 self.__response_event.clear()
                 self.__current_response_message = None
-                data = msg.encode()
-                logging.debug(f"Sending message over BLE: {msg}")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Sending message over BLE: {msg}")
                 await self.__client.write_gatt_char(UART_RX_CHAR_UUID, data)
             except Exception as e:
-                logging.warning(f"Error sending message: {e!s}", exc_info=False)
+                logger.warning(f"Error sending message: {e!s}", exc_info=False)
                 return None
             if wait_for_response:
                 try:
                     await asyncio.wait_for(self.__response_event.wait(), timeout)
-                except TimeoutError:
-                    logging.warning("Timeout waiting for response message")
+                except TimeoutError as e:
+                    logger.warning(f"Timeout waiting for response message: {e!s}", exc_info=False)
                     return None
             return self.__current_response_message
 
@@ -366,9 +371,11 @@ class _MessageReader:
 
         New messages, both custom codec messages and BLE messages are received here.
         """
-        logging.debug(f"New incoming data UART TX data: {bytes(data).hex()}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"New incoming data UART TX data: {bytes(data).hex()}")
         if len(self.saved_data) > 0:
-            logging.debug(f"Adding saved data: {bytes(self.saved_data).hex()}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Adding saved data: {bytes(self.saved_data).hex()}")
             data = self.saved_data + data
             self.saved_data = bytearray()
         pos = 0
@@ -377,27 +384,29 @@ class _MessageReader:
                 msg = codec.decode(
                     data=bytes(data[pos:]), accept_crc_error=True
                 )  # Set to False when only using FW>=5.4.0
-                logging.debug(f"Decoded incoming UART message: {msg}")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Decoded incoming UART message: {msg}")
                 self.__handle_incoming_message(msg)
                 pos += msg.length
             except BufferError as e:
                 # BufferError is sort of OK as we just need to aggregate the data for now?
-                logging.debug(f"Saving {len(data[pos:])} bytes for later parsing due to {e!r}.")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Saving {len(data[pos:])} bytes for later parsing due to {e!r}.")
                 self.saved_data = data[pos:]
                 break
             except CrcError as e:
                 (msgtype, msglen) = codec.Message.get_meta(bytes(data[pos:]))
-                logging.warning(
+                logger.warning(
                     f"CRC error {e!r} at position {pos} for message type {hex(msgtype)} with length {msglen} in Data={data.hex()}"
                 )
                 pos += msglen  # Skip entire packet to resync, assuming fault is NOT in the length field!
                 continue
             except Exception as e:
                 (msgtype, msglen) = codec.Message.get_meta(bytes(data[pos:]))
-                logging.warning(
+                logger.warning(
                     f"Receive error in on_uart_tx_data(): {e!r} at position {pos} of {len(data)} in Data={data.hex()}"
                 )
-                logging.warning(traceback.format_exception(Exception, e, e.__traceback__))
+                logger.warning("".join(traceback.format_exception(Exception, e, e.__traceback__)))
                 pos += msglen  # Skip message length to keep sync if message code was just unknown
                 continue
 
@@ -406,7 +415,8 @@ class _MessageReader:
 
         This is invoked by the BLE message listener.
         """
-        logging.debug(f"Received BLE message for uuid {uuid}: {data.hex()}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Received BLE message for uuid {uuid}: {data.hex()}")
         self.__handle_ble_message(uuid=uuid.uuid, data=data)
 
     def __handle_incoming_message(self, msg: codec.Message) -> None:
@@ -416,7 +426,8 @@ class _MessageReader:
             self.__handle_response_message(msg)
 
     def __handle_message(self, msg: codec.Message) -> None:
-        logging.debug(f"Handling new incoming message: {msg}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Handling new incoming message: {msg}")
         with self.__message_listeners_lock:
             for listener in self.__message_listeners:
                 self.__message_listener_executor.submit(_MessageReader.__notify_message_listener, listener, msg)
@@ -426,7 +437,7 @@ class _MessageReader:
         try:
             listener.message_received(msg)
         except Exception as e:
-            logging.warning(f"Error notifying listener: {e!s}", exc_info=True)
+            logger.warning(f"Error notifying listener: {e!s}", exc_info=True)
 
     def add_message_listener(self, listener: MessageListener) -> None:
         with self.__message_listeners_lock:
@@ -439,12 +450,14 @@ class _MessageReader:
     def add_response_message_listener(self, listener: ResponseMessageListener) -> None:
         with self.__response_message_listeners_lock:
             self.__response_message_listeners.add(listener)
-        logging.warning(f"{listener!r} was added to response message listener set!")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"{listener!r} was added to response message listener set!")
 
     def discard_response_message_listener(self, listener: ResponseMessageListener) -> None:
         with self.__response_message_listeners_lock:
             self.__response_message_listeners.discard(listener)
-        logging.warning(f"{listener!r} was removed from response message listener set!")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"{listener!r} was removed from response message listener set!")
 
     def add_ble_message_listener(self, listener: BleMessageListener) -> None:
         with self.__ble_message_listeners_lock:
@@ -455,7 +468,8 @@ class _MessageReader:
             self.__ble_message_listeners.discard(listener)
 
     def __handle_response_message(self, msg: codec.Message) -> None:
-        logging.debug(f"Handling new response message: {msg}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Handling new response message: {msg}")
         with self.__response_message_listeners_lock:
             for listener in self.__response_message_listeners:
                 _MessageReader.__notify_rsp_message_listener(listener, msg)
@@ -465,10 +479,11 @@ class _MessageReader:
         try:
             listener.response_message_received(msg)
         except Exception as e:
-            logging.warning(f"Error notifying listener: {e!s}", exc_info=True)
+            logger.warning(f"Error notifying listener: {e!s}", exc_info=True)
 
     def __handle_ble_message(self, uuid: str, data: bytes) -> None:
-        logging.debug(f"Handling new BLE message. UUID: {uuid}, data: {data.hex()}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Handling new BLE message. UUID: {uuid}, data: {data.hex()}")
         with self.__ble_message_listeners_lock:
             for listener in self.__ble_message_listeners:
                 self.__ble_message_listener_executor.submit(
@@ -480,4 +495,4 @@ class _MessageReader:
         try:
             listener.ble_message_received(uuid, data)
         except Exception as e:
-            logging.warning(f"Error notifying ble listener: {e!s}", exc_info=True)
+            logger.warning(f"Error notifying ble listener: {e!s}", exc_info=True)

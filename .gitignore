@@ -11,3 +11,7 @@ __pycache__/
 
 .idea/
 *.code-workspace
+
+# AI coding agents
+.claude/
+CLAUDE.md
