@@ -1,4 +1,4 @@
-.mypy_cache/
+.ty_cache/
 /.coverage
 /.coverage.*
 /.nox/

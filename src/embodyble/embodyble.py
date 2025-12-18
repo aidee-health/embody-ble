@@ -410,7 +410,7 @@ class _MessageReader:
                 pos += msglen  # Skip message length to keep sync if message code was just unknown
                 continue
 
-    def on_ble_message_received(self, uuid: BleakGATTCharacteristic, data: bytes) -> None:
+    def on_ble_message_received(self, uuid: BleakGATTCharacteristic, data: bytearray) -> None:
         """Callback invoked when a new BLE message is received.
 
         This is invoked by the BLE message listener.
@@ -481,7 +481,7 @@ class _MessageReader:
         except Exception as e:
             logger.warning(f"Error notifying listener: {e!s}", exc_info=True)
 
-    def __handle_ble_message(self, uuid: str, data: bytes) -> None:
+    def __handle_ble_message(self, uuid: str, data: bytes | bytearray) -> None:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"Handling new BLE message. UUID: {uuid}, data: {data.hex()}")
         with self.__ble_message_listeners_lock:
@@ -491,7 +491,7 @@ class _MessageReader:
                 )
 
     @staticmethod
-    def __notify_ble_message_listener(listener: BleMessageListener, uuid: str, data: bytes) -> None:
+    def __notify_ble_message_listener(listener: BleMessageListener, uuid: str, data: bytes | bytearray) -> None:
         try:
             listener.ble_message_received(uuid, data)
         except Exception as e:
