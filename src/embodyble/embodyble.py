@@ -101,7 +101,7 @@ class EmbodyBle(embodyserial.EmbodySender):
         device = await scanner.find_device_by_filter(
             lambda d, ad: bool(ad.local_name and ad.local_name.lower() == self.__device_name.lower())
             or bool(d and d.name and d.name.lower() == self.__device_name.lower())
-        )  # type: ignore[call-arg]
+        )
         if not device:
             raise EmbodyBleError(f"Could not find device with name {self.__device_name}")
         self.__client = BleakClient(device, self._on_disconnected)

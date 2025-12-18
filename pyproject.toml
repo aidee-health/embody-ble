@@ -79,12 +79,39 @@ lines_after_imports = 2
 python-version = "3.11"
 
 [tool.ty.rules]
+# Core reference and assignment errors
 unresolved-reference = "error"
+unresolved-import = "error"
 invalid-assignment = "error"
+
+# Function call validation
 invalid-argument-type = "error"
 call-non-callable = "error"
+missing-argument = "error"
+too-many-positional-arguments = "error"
+unknown-argument = "error"
+
+# Return type validation
+invalid-return-type = "error"
+
+# Attribute and subscription
+invalid-attribute-access = "error"
+non-subscriptable = "error"
+not-iterable = "error"
+
+# OOP and inheritance
+invalid-method-override = "error"
+
+# Exception handling
+invalid-raise = "error"
+
+# Warnings for potential issues
 deprecated = "warn"
 redundant-cast = "warn"
+possibly-unresolved-reference = "warn"
+division-by-zero = "warn"
+unused-ignore-comment = "warn"
+possibly-missing-attribute = "warn"
 
 [tool.ty.terminal]
 output-format = "full"
