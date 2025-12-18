@@ -28,7 +28,7 @@
 - Facade method to send/receive BLE messages directly
 - All methods and callbacks are threadsafe
 - Separate threads for send, receive and callback processing
-- Type safe code using [mypy](https://mypy.readthedocs.io/) for type checking
+- Type safe code using [ty](https://docs.astral.sh/ty/) for type checking
 - High level callback interface for attribute reporting
 
 ## Requirements
