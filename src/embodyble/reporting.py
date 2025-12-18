@@ -308,7 +308,7 @@ class AttributeChangedMessageListener(MessageListener, BleMessageListener):
         else:
             logger.warning("Unhandled message: %s", msg)
 
-    def ble_message_received(self, uuid: str, data: bytes) -> None:
+    def ble_message_received(self, uuid: str, data: bytes | bytearray) -> None:
         """Process received message"""
         if uuid == BATTERY_LEVEL_UUID:
             for listener in self.__message_listeners:
@@ -532,7 +532,7 @@ def convert_to_gatt_current_time(timestamp: datetime) -> bytes:
     return struct.pack("<hbbbbb", dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
 
 
-def convert_from_gatt_current_time(time_bytes: bytes) -> datetime:
+def convert_from_gatt_current_time(time_bytes: bytes | bytearray) -> datetime:
     """Accessory function to convert a GATT current time byte array to a datetime object."""
     year, month, day, hour, minute, second = struct.unpack("<hbbbbb", time_bytes[0:7])
     return datetime(year, month, day, hour, minute, second, tzinfo=UTC)

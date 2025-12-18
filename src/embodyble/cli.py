@@ -79,7 +79,11 @@ def main(args=None):
         send_helper = EmbodySendHelper(sender=embody_ble)
 
         if parsed_args.get:
-            print(f"{getattr(send_helper, get_attributes_dict.get(parsed_args.get))()}")
+            method_name = get_attributes_dict.get(parsed_args.get)
+            if method_name is None:
+                print(f"Unknown attribute: {parsed_args.get}")
+                return
+            print(f"{getattr(send_helper, method_name)()}")
             return
         elif parsed_args.get_all:
             __get_all_attributes(send_helper)
