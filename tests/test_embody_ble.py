@@ -459,3 +459,33 @@ def test_on_disconnected_callback(mock_scanner_class, mock_client_class, mock_bl
         assert any(call[0][0] is False for call in mock_connection_listener.on_connected.call_args_list)
     finally:
         ble.shutdown()
+
+
+# MessageReader Buffer Tests
+
+
+def test_message_reader_saved_data_buffer_overflow(mock_bleak_client, caplog):
+    """Test that saved_data buffer is cleared when it exceeds MAX_SAVED_DATA_SIZE."""
+    import logging
+
+    from embodyble.embodyble import MAX_SAVED_DATA_SIZE
+    from embodyble.embodyble import _MessageReader
+
+    reader = _MessageReader(mock_bleak_client)
+    try:
+        # Pre-fill saved_data beyond the limit
+        reader.saved_data = bytearray(b"X" * (MAX_SAVED_DATA_SIZE + 1))
+
+        # Create a mock GATT characteristic
+        mock_char = Mock()
+        mock_char.uuid = "test-uuid"
+
+        with caplog.at_level(logging.WARNING):
+            # Call on_uart_tx_data with minimal data
+            reader.on_uart_tx_data(mock_char, bytearray(b"\x00"))
+
+        # Buffer should be cleared (not accumulated)
+        assert len(reader.saved_data) <= MAX_SAVED_DATA_SIZE
+        assert "buffer overflow" in caplog.text.lower()
+    finally:
+        reader.stop()

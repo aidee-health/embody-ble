@@ -177,7 +177,7 @@ wheels = [
 
 [[package]]
 name = "embody-ble"
-version = "1.1.26"
+version = "1.1.27"
 source = { editable = "." }
 dependencies = [
     { name = "bleak" },
@@ -231,15 +231,15 @@ wheels = [
 
 [[package]]
 name = "embody-serial"
-version = "1.0.37"
+version = "1.0.38"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "embody-codec" },
     { name = "pyserial" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f5/f6/731c02bf4403404c22b5c4dc5518ef5462b164c4603975dfa282b6b8e5af/embody_serial-1.0.37.tar.gz", hash = "sha256:819981b177166698a86c2da4bb0ac58c31c6b1bbae60dc1625d5c4f51fa1097b", size = 16018, upload-time = "2025-12-18T14:21:42.912Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/b4/331b3f49036beec0d0f2128d2ad5fba6540d7a40ff827f52cbfb59286a86/embody_serial-1.0.38.tar.gz", hash = "sha256:ddc31b1bc021e4a13607cc37497833795df0577e6deb2d8e29d947214bdabc91", size = 16423, upload-time = "2025-12-23T19:56:02.756Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/42/241820964a18bb3210430763cc7ae1a225ab233866834cb275193cc91104/embody_serial-1.0.37-py3-none-any.whl", hash = "sha256:f15d42ccdf28c500d354e3858678fae086c00255f5fedf9023170ca4453507c5", size = 17931, upload-time = "2025-12-18T14:21:41.857Z" },
+    { url = "https://files.pythonhosted.org/packages/33/5c/c11e08240ab1b25f0d68b5a28fb17397d85fe3bb06cf856900685996e0ad/embody_serial-1.0.38-py3-none-any.whl", hash = "sha256:d53c49674f5b1e440f5ec7c2c7fd1137e42f0b25d18234bd68e017c44fb792e3", size = 18384, upload-time = "2025-12-23T19:56:01.583Z" },
 ]
 
 [[package]]
@@ -271,11 +271,11 @@ wheels = [
 
 [[package]]
 name = "nodeenv"
-version = "1.9.1"
+version = "1.10.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/43/16/fc88b08840de0e0a72a2f9d8c6bae36be573e475a6326ae854bcc549fc45/nodeenv-1.9.1.tar.gz", hash = "sha256:6ec12890a2dab7946721edbfbcd91f3319c6ccc9aec47be7c7e6b7011ee6645f", size = 47437, upload-time = "2024-06-04T18:44:11.171Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/24/bf/d1bda4f6168e0b2e9e5958945e01910052158313224ada5ce1fb2e1113b8/nodeenv-1.10.0.tar.gz", hash = "sha256:996c191ad80897d076bdfba80a41994c2b47c68e224c542b48feba42ba00f8bb", size = 55611, upload-time = "2025-12-20T14:08:54.006Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d2/1d/1b658dbd2b9fa9c4c9f32accbfc0205d532c8c6194dc0f2a4c0428e7128a/nodeenv-1.9.1-py2.py3-none-any.whl", hash = "sha256:ba11c9782d29c27c70ffbdda2d7415098754709be8a7056d79a737cd901155c9", size = 22314, upload-time = "2024-06-04T18:44:08.352Z" },
+    { url = "https://files.pythonhosted.org/packages/88/b2/d0896bdcdc8d28a7fc5717c305f1a861c26e18c05047949fb371034d98bd/nodeenv-1.10.0-py2.py3-none-any.whl", hash = "sha256:5bb13e3eed2923615535339b3c620e76779af4cb4c6a90deccc9e36b274d3827", size = 23438, upload-time = "2025-12-20T14:08:52.782Z" },
 ]
 
 [[package]]
