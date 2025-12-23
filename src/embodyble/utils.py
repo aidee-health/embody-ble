@@ -40,6 +40,7 @@ class FileReceiver(ResponseMessageListener):
         self._chunk_timer: threading.Timer | None = None
         self._overall_timer: threading.Timer | None = None
         self._timer_lock: threading.Lock = threading.Lock()
+        self._callback_invoked: bool = False  # Flag to ensure done_callback is only called once
         self.embody_ble.add_response_message_listener(self)
 
     def stop_listening(self):
@@ -89,17 +90,20 @@ class FileReceiver(ResponseMessageListener):
 
     def _on_chunk_timeout(self) -> None:
         """Handle inter-chunk timeout - no chunk received within timeout period."""
+        should_invoke_callback = False
         with self._timer_lock:
-            if not self.receive:
-                return  # Transfer already completed or cancelled
+            if not self.receive or self._callback_invoked:
+                return  # Transfer already completed or callback already invoked
             logger.warning(
                 f"File transfer timeout: No chunk received for {self._chunk_timeout}s "
                 f"(file: {self.filename!r}, position: {self.file_position}/{self.file_length})"
             )
             self.receive = False
             self._cancel_timers_unsafe()
+            self._callback_invoked = True
+            should_invoke_callback = True
 
-        if self.done_callback is not None:
+        if should_invoke_callback and self.done_callback is not None:
             self.done_callback(
                 self.filename,
                 self.file_position,
@@ -112,9 +116,10 @@ class FileReceiver(ResponseMessageListener):
 
     def _on_overall_timeout(self) -> None:
         """Handle overall transfer timeout - total transfer time exceeded."""
+        should_invoke_callback = False
         with self._timer_lock:
-            if not self.receive:
-                return  # Transfer already completed or cancelled
+            if not self.receive or self._callback_invoked:
+                return  # Transfer already completed or callback already invoked
             elapsed = time.perf_counter() - self.file_t0
             logger.warning(
                 f"File transfer overall timeout: Transfer exceeded {self._overall_timeout}s "
@@ -123,8 +128,10 @@ class FileReceiver(ResponseMessageListener):
             )
             self.receive = False
             self._cancel_timers_unsafe()
+            self._callback_invoked = True
+            should_invoke_callback = True
 
-        if self.done_callback is not None:
+        if should_invoke_callback and self.done_callback is not None:
             self.done_callback(
                 self.filename,
                 self.file_position,
@@ -146,13 +153,19 @@ class FileReceiver(ResponseMessageListener):
             # Reset chunk timeout on each received chunk
             self._reset_chunk_timer()
             if self.file_position != filechunk.offset:
+                should_invoke_callback = False
+                with self._timer_lock:
+                    if not self._callback_invoked:
+                        self._callback_invoked = True
+                        should_invoke_callback = True
+                
                 logger.error(
                     "Discarding out of order file chunk of "
                     + f"{len(filechunk.file_data)} bytes for offset "
                     + f"{filechunk.offset} when expecting offset {self.file_position}"
                 )
                 self._cancel_all_timers()
-                if self.done_callback is not None:
+                if should_invoke_callback and self.done_callback is not None:
                     self.done_callback(
                         self.filename,
                         self.file_position,
@@ -190,8 +203,14 @@ class FileReceiver(ResponseMessageListener):
             if self.progress_callback is not None:
                 self.progress_callback(self.filename, 100.0 * (self.file_position / self.file_length))
             if done:  # Report completion and clean up
+                should_invoke_callback = False
+                with self._timer_lock:
+                    if not self._callback_invoked:
+                        self._callback_invoked = True
+                        should_invoke_callback = True
+                
                 self._cancel_all_timers()
-                if self.done_callback is not None:
+                if should_invoke_callback and self.done_callback is not None:
                     self.done_callback(self.filename, self.file_position, self.datastream, None)
                 self.receive = False
 
@@ -217,6 +236,7 @@ class FileReceiver(ResponseMessageListener):
         self.progress_callback = progress_callback
         self._chunk_timeout = chunk_timeout
         self._overall_timeout = overall_timeout
+        self._callback_invoked = False  # Reset flag for new transfer
         self.receive = True
         self.file_t0 = time.perf_counter()
         self._start_chunk_timer()
