@@ -32,6 +32,8 @@ UART_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 UART_RX_CHAR_UUID = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
 UART_TX_CHAR_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
+MAX_SAVED_DATA_SIZE = 4096  # Maximum size for incomplete message buffer
+
 
 class EmbodyBle(embodyserial.EmbodySender):
     """Main class for setting up BLE communication with an EmBody device.
@@ -190,19 +192,20 @@ class EmbodyBle(embodyserial.EmbodySender):
     def __find_name_from_serial_port() -> str:
         """Request serial no from EmBody device."""
         comm = embodyserial.EmbodySerial()
-        send_helper = EmbodySendHelper(comm)
-        serial_no = send_helper.get_serial_no()
-        firmware_version = version.parse(send_helper.get_firmware_version())
-        prefix = "G3_" if firmware_version < version.parse("5.4.0") else "EmBody_"
-        device_name = prefix + serial_no[-4:].upper()
-        comm.shutdown()
-        return device_name
+        try:
+            send_helper = EmbodySendHelper(comm)
+            serial_no = send_helper.get_serial_no()
+            firmware_version = version.parse(send_helper.get_firmware_version())
+            prefix = "G3_" if firmware_version < version.parse("5.4.0") else "EmBody_"
+            return prefix + serial_no[-4:].upper()
+        finally:
+            comm.shutdown()
 
-    def list_available_devices(self, timeout=3) -> list[str]:
+    def list_available_devices(self, timeout: float = 3) -> list[str]:
         """List available devices filtered by NUS service."""
         return asyncio.run_coroutine_threadsafe(self.__list_available_devices(timeout), self.__loop).result()
 
-    async def __list_available_devices(self, timeout=3) -> list[str]:
+    async def __list_available_devices(self, timeout: float = 3) -> list[str]:
         """List available devices filtered by NUS service."""
         scanner = BleakScanner()
         await scanner.start()
@@ -347,8 +350,12 @@ class _MessageReader:
             self.__response_message_listeners = set()
         self.__response_message_listeners_lock = threading.Lock()
         self.saved_data = bytearray()
+        self.__stopped = False
 
     def stop(self) -> None:
+        if self.__stopped:
+            return
+        self.__stopped = True
         self.__message_listener_executor.shutdown(wait=False, cancel_futures=False)
         self.__ble_message_listener_executor.shutdown(wait=False, cancel_futures=False)
 
@@ -374,10 +381,14 @@ class _MessageReader:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"New incoming data UART TX data: {bytes(data).hex()}")
         if len(self.saved_data) > 0:
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f"Adding saved data: {bytes(self.saved_data).hex()}")
-            data = self.saved_data + data
-            self.saved_data = bytearray()
+            if len(self.saved_data) > MAX_SAVED_DATA_SIZE:
+                logger.warning(f"Saved data buffer overflow ({len(self.saved_data)} bytes), clearing")
+                self.saved_data = bytearray()
+            else:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Adding saved data: {bytes(self.saved_data).hex()}")
+                data = self.saved_data + data
+                self.saved_data = bytearray()
         pos = 0
         while pos < len(data):
             try:
@@ -395,19 +406,29 @@ class _MessageReader:
                 self.saved_data = data[pos:]
                 break
             except CrcError as e:
-                (msgtype, msglen) = codec.Message.get_meta(bytes(data[pos:]))
-                logger.warning(
-                    f"CRC error {e!r} at position {pos} for message type {hex(msgtype)} with length {msglen} in Data={data.hex()}"
-                )
-                pos += msglen  # Skip entire packet to resync, assuming fault is NOT in the length field!
+                try:
+                    (msgtype, msglen) = codec.Message.get_meta(bytes(data[pos:]))
+                    logger.warning(
+                        f"CRC error {e!r} at position {pos} for message type {hex(msgtype)} with length {msglen} in Data={data.hex()}"
+                    )
+                    pos += msglen  # Skip entire packet to resync, assuming fault is NOT in the length field!
+                except Exception:
+                    logger.warning(f"CRC error {e!r} at position {pos}, unable to get message meta, skipping 1 byte")
+                    pos += 1  # Skip one byte to try resync
                 continue
             except Exception as e:
-                (msgtype, msglen) = codec.Message.get_meta(bytes(data[pos:]))
-                logger.warning(
-                    f"Receive error in on_uart_tx_data(): {e!r} at position {pos} of {len(data)} in Data={data.hex()}"
-                )
-                logger.warning("".join(traceback.format_exception(Exception, e, e.__traceback__)))
-                pos += msglen  # Skip message length to keep sync if message code was just unknown
+                try:
+                    (msgtype, msglen) = codec.Message.get_meta(bytes(data[pos:]))
+                    logger.warning(
+                        f"Receive error in on_uart_tx_data(): {e!r} at position {pos} of {len(data)} in Data={data.hex()}"
+                    )
+                    logger.warning("".join(traceback.format_exception(Exception, e, e.__traceback__)))
+                    pos += msglen  # Skip message length to keep sync if message code was just unknown
+                except Exception:
+                    logger.warning(
+                        f"Receive error {e!r} at position {pos}, unable to get message meta, skipping 1 byte"
+                    )
+                    pos += 1  # Skip one byte to try resync
                 continue
 
     def on_ble_message_received(self, uuid: BleakGATTCharacteristic, data: bytearray) -> None:
