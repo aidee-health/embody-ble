@@ -188,7 +188,11 @@ class FileReceiver(ResponseMessageListener):
                 )
                 done = True
             if self.progress_callback is not None:
-                self.progress_callback(self.filename, 100.0 * (self.file_position / self.file_length))
+                if self.file_length > 0:
+                    progress = 100.0 * (self.file_position / self.file_length)
+                else:
+                    progress = 0.0
+                self.progress_callback(self.filename, progress)
             if done:  # Report completion and clean up
                 self._cancel_all_timers()
                 if self.done_callback is not None:
