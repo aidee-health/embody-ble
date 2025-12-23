@@ -40,6 +40,7 @@ class FileReceiver(ResponseMessageListener):
         self._chunk_timer: threading.Timer | None = None
         self._overall_timer: threading.Timer | None = None
         self._timer_lock: threading.Lock = threading.Lock()
+        self._callback_invoked: bool = False
         self.embody_ble.add_response_message_listener(self)
 
     def stop_listening(self):
@@ -87,6 +88,15 @@ class FileReceiver(ResponseMessageListener):
             self._overall_timer.cancel()
             self._overall_timer = None
 
+    def _invoke_done_callback(self, error: Exception | None) -> None:
+        """Invoke done_callback exactly once, thread-safe."""
+        with self._timer_lock:
+            if self._callback_invoked:
+                return
+            self._callback_invoked = True
+        if self.done_callback is not None:
+            self.done_callback(self.filename, self.file_position, self.datastream, error)
+
     def _on_chunk_timeout(self) -> None:
         """Handle inter-chunk timeout - no chunk received within timeout period."""
         with self._timer_lock:
@@ -99,16 +109,12 @@ class FileReceiver(ResponseMessageListener):
             self.receive = False
             self._cancel_timers_unsafe()
 
-        if self.done_callback is not None:
-            self.done_callback(
-                self.filename,
-                self.file_position,
-                self.datastream,
-                TimeoutError(
-                    f"File transfer stalled: no data received for {self._chunk_timeout} seconds "
-                    f"at position {self.file_position} of {self.file_length} bytes"
-                ),
+        self._invoke_done_callback(
+            TimeoutError(
+                f"File transfer stalled: no data received for {self._chunk_timeout} seconds "
+                f"at position {self.file_position} of {self.file_length} bytes"
             )
+        )
 
     def _on_overall_timeout(self) -> None:
         """Handle overall transfer timeout - total transfer time exceeded."""
@@ -124,16 +130,12 @@ class FileReceiver(ResponseMessageListener):
             self.receive = False
             self._cancel_timers_unsafe()
 
-        if self.done_callback is not None:
-            self.done_callback(
-                self.filename,
-                self.file_position,
-                self.datastream,
-                TimeoutError(
-                    f"File transfer exceeded maximum time of {self._overall_timeout} seconds "
-                    f"({self.file_position} of {self.file_length} bytes received)"
-                ),
+        self._invoke_done_callback(
+            TimeoutError(
+                f"File transfer exceeded maximum time of {self._overall_timeout} seconds "
+                f"({self.file_position} of {self.file_length} bytes received)"
             )
+        )
 
     def response_message_received(self, msg: codec.Message) -> None:
         if isinstance(msg, codec.FileDataChunk):
@@ -143,8 +145,6 @@ class FileReceiver(ResponseMessageListener):
             done = False
             if self.receive is False:  # Ignore all messages after we have rejected the transfer
                 return
-            # Reset chunk timeout on each received chunk
-            self._reset_chunk_timer()
             if self.file_position != filechunk.offset:
                 logger.error(
                     "Discarding out of order file chunk of "
@@ -152,19 +152,17 @@ class FileReceiver(ResponseMessageListener):
                     + f"{filechunk.offset} when expecting offset {self.file_position}"
                 )
                 self._cancel_all_timers()
-                if self.done_callback is not None:
-                    self.done_callback(
-                        self.filename,
-                        self.file_position,
-                        self.datastream,
-                        Exception(
-                            "Aborted due to out of order file chunk with fileref "
-                            + f"{filechunk.fileref} of {len(filechunk.file_data)} bytes for offset "
-                            + f"{filechunk.offset} when expecting offset {self.file_position}"
-                        ),
+                self._invoke_done_callback(
+                    Exception(
+                        "Aborted due to out of order file chunk with fileref "
+                        + f"{filechunk.fileref} of {len(filechunk.file_data)} bytes for offset "
+                        + f"{filechunk.offset} when expecting offset {self.file_position}"
                     )
+                )
                 self.receive = False
                 return
+            # Reset chunk timeout on each valid received chunk
+            self._reset_chunk_timer()
             if self.datastream is not None:
                 self.datastream.write(filechunk.file_data)
             if logger.isEnabledFor(logging.DEBUG):
@@ -195,8 +193,7 @@ class FileReceiver(ResponseMessageListener):
                 self.progress_callback(self.filename, progress)
             if done:  # Report completion and clean up
                 self._cancel_all_timers()
-                if self.done_callback is not None:
-                    self.done_callback(self.filename, self.file_position, self.datastream, None)
+                self._invoke_done_callback(None)
                 self.receive = False
 
     def get_file(
@@ -221,6 +218,7 @@ class FileReceiver(ResponseMessageListener):
         self.progress_callback = progress_callback
         self._chunk_timeout = chunk_timeout
         self._overall_timeout = overall_timeout
+        self._callback_invoked = False
         self.receive = True
         self.file_t0 = time.perf_counter()
         self._start_chunk_timer()
