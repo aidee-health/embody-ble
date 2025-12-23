@@ -249,20 +249,128 @@ def test_stop_listening_cancels_timers(file_receiver):
     assert file_receiver.receive is False
 
 
-def test_no_double_callback_on_race_condition(file_receiver):
-    """Test that callback is only called once even with race conditions."""
+def test_callback_invoked_flag_prevents_double_callback(file_receiver):
+    """Test that _callback_invoked flag prevents multiple callback invocations."""
     done_callback = Mock()
-    file_receiver.get_file("test.bin", 100, done_callback=done_callback, chunk_timeout=0.05)
+    file_receiver.get_file("test.bin", 100, done_callback=done_callback, chunk_timeout=10.0)
 
-    # Simulate race: chunk arrives just as timeout fires
-    time.sleep(0.04)
+    # Directly invoke done callback twice to test the protection mechanism
+    file_receiver._invoke_done_callback(None)
+    file_receiver._invoke_done_callback(TimeoutError("Should be ignored"))
+
+    # Should only be called once despite two invocations
+    assert done_callback.call_count == 1
+    # First call should have no error
+    args = done_callback.call_args[0]
+    assert args[3] is None
+
+    file_receiver.stop_listening()
+
+
+def test_timeout_after_completion_is_ignored(file_receiver):
+    """Test that late-firing timeout is ignored after successful completion."""
+    done_callback = Mock()
+    file_receiver.get_file("test.bin", 100, done_callback=done_callback, chunk_timeout=10.0)
+
+    # Complete the transfer normally
     chunk = codec.FileDataChunk(fileref=1, offset=0, file_data=b"X" * 100)
     file_receiver.response_message_received(chunk)
 
-    time.sleep(0.1)  # Wait for any pending timeout
+    assert done_callback.call_count == 1
+    assert done_callback.call_args[0][3] is None  # No error
+
+    # Simulate late-firing timer by directly calling timeout handler
+    file_receiver._on_chunk_timeout()
+
+    # Callback should still only be called once
+    assert done_callback.call_count == 1
+
+
+def test_concurrent_timeout_handlers(file_receiver):
+    """Test that only one callback fires when both timeout handlers trigger."""
+    done_callback = Mock()
+    file_receiver.get_file("test.bin", 100, done_callback=done_callback, chunk_timeout=10.0, overall_timeout=60.0)
+
+    # Directly invoke both timeout handlers in quick succession
+    file_receiver._on_chunk_timeout()
+    file_receiver._on_overall_timeout()
 
     # Should only be called once
     assert done_callback.call_count == 1
+    assert isinstance(done_callback.call_args[0][3], TimeoutError)
+    assert file_receiver.receive is False
+
+
+def test_completion_during_timeout_check(file_receiver):
+    """Test thread-safe completion when timeout and chunk arrive concurrently."""
+    import threading
+
+    done_callback = Mock()
+    file_receiver.get_file("test.bin", 100, done_callback=done_callback, chunk_timeout=10.0)
+
+    results = {"timeout_completed": False, "chunk_completed": False}
+    start_event = threading.Event()
+
+    def trigger_timeout():
+        start_event.wait()
+        file_receiver._on_chunk_timeout()
+        results["timeout_completed"] = True
+
+    def send_chunk():
+        start_event.wait()
+        chunk = codec.FileDataChunk(fileref=1, offset=0, file_data=b"X" * 100)
+        file_receiver.response_message_received(chunk)
+        results["chunk_completed"] = True
+
+    t1 = threading.Thread(target=trigger_timeout)
+    t2 = threading.Thread(target=send_chunk)
+
+    t1.start()
+    t2.start()
+
+    # Release both threads simultaneously
+    start_event.set()
+
+    t1.join(timeout=1.0)
+    t2.join(timeout=1.0)
+
+    # Both should complete
+    assert results["timeout_completed"]
+    assert results["chunk_completed"]
+
+    # Callback should only be invoked once
+    assert done_callback.call_count == 1
+
+
+def test_stress_concurrent_callbacks(file_receiver):
+    """Stress test: multiple threads trying to invoke callback simultaneously."""
+    import threading
+
+    done_callback = Mock()
+    file_receiver.get_file("test.bin", 100, done_callback=done_callback, chunk_timeout=10.0)
+
+    num_threads = 10
+    start_event = threading.Event()
+    threads = []
+
+    def try_invoke_callback(error_num):
+        start_event.wait()
+        file_receiver._invoke_done_callback(Exception(f"Error {error_num}"))
+
+    for i in range(num_threads):
+        t = threading.Thread(target=try_invoke_callback, args=(i,))
+        threads.append(t)
+        t.start()
+
+    # Release all threads simultaneously
+    start_event.set()
+
+    for t in threads:
+        t.join(timeout=1.0)
+
+    # Callback should only be invoked exactly once despite 10 concurrent attempts
+    assert done_callback.call_count == 1
+    file_receiver.stop_listening()
 
 
 def test_default_chunk_timeout_value(file_receiver):
