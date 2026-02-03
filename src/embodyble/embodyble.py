@@ -11,8 +11,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 
-from bleak import BleakClient
-from bleak import BleakScanner
+from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from embodycodec import codec
 from embodycodec.exceptions import CrcError
@@ -21,10 +20,7 @@ from embodyserial.helpers import EmbodySendHelper
 from packaging import version
 
 from .exceptions import EmbodyBleError
-from .listeners import BleMessageListener
-from .listeners import ConnectionListener
-from .listeners import MessageListener
-from .listeners import ResponseMessageListener
+from .listeners import BleMessageListener, ConnectionListener, MessageListener, ResponseMessageListener
 
 logger = logging.getLogger(__name__)
 
@@ -400,7 +396,28 @@ class _MessageReader:
                 self.__handle_incoming_message(msg)
                 pos += msg.length
             except BufferError as e:
-                # BufferError is sort of OK as we just need to aggregate the data for now?
+                # BufferError means we need more data. But first check if it's actually
+                # a known message type - garbage bytes may look like incomplete messages.
+                try:
+                    (msg_type, claimed_len) = codec.Message.get_meta(bytes(data[pos:]))
+                    is_known_type = msg_type in codec._MESSAGE_REGISTRY
+                    is_reasonable_len = claimed_len <= MAX_SAVED_DATA_SIZE
+
+                    if not is_known_type or not is_reasonable_len:
+                        # Unknown type or unreasonable length = garbage, skip 1 byte
+                        if logger.isEnabledFor(logging.DEBUG):
+                            logger.debug(
+                                f"BufferError at pos {pos}: type=0x{msg_type:02x} "
+                                f"(known={is_known_type}), len={claimed_len}. Skipping 1 byte."
+                            )
+                        pos += 1
+                        continue
+                except Exception:
+                    # Can't read header (< 3 bytes), fall through to save data
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"BufferError at pos {pos}: incomplete header, saving data for later")
+
+                # Known type with reasonable length - save for later
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f"Saving {len(data[pos:])} bytes for later parsing due to {e!r}.")
                 self.saved_data = data[pos:]
@@ -416,6 +433,12 @@ class _MessageReader:
                     logger.warning(f"CRC error {e!r} at position {pos}, unable to get message meta, skipping 1 byte")
                     pos += 1  # Skip one byte to try resync
                 continue
+            except LookupError as e:
+                # Unknown message type - don't trust the length field, just skip 1 byte
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Unknown message type at position {pos}, skipping 1 byte to resync: {e!r}")
+                pos += 1
+                continue
             except Exception as e:
                 try:
                     (msgtype, msglen) = codec.Message.get_meta(bytes(data[pos:]))
@@ -423,7 +446,7 @@ class _MessageReader:
                         f"Receive error in on_uart_tx_data(): {e!r} at position {pos} of {len(data)} in Data={data.hex()}"
                     )
                     logger.warning("".join(traceback.format_exception(Exception, e, e.__traceback__)))
-                    pos += msglen  # Skip message length to keep sync if message code was just unknown
+                    pos += max(msglen, 1)  # Skip message length to keep sync, ensure progress
                 except Exception:
                     logger.warning(
                         f"Receive error {e!r} at position {pos}, unable to get message meta, skipping 1 byte"
