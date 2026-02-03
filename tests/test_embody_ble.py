@@ -285,7 +285,7 @@ def test_listener_registration_propagates_to_reader(
 
 def test_send_raises_when_not_connected():
     """Test that send raises EmbodyBleError when sender not initialized."""
-    from embodycodec import codec, attributes
+    from embodycodec import attributes, codec
 
     ble = EmbodyBle()
     try:
@@ -301,7 +301,7 @@ def test_send_raises_when_not_connected():
 
 def test_send_async_raises_when_not_connected():
     """Test that send_async raises EmbodyBleError when sender not initialized."""
-    from embodycodec import codec, attributes
+    from embodycodec import attributes, codec
 
     ble = EmbodyBle()
     try:
@@ -468,8 +468,7 @@ def test_message_reader_saved_data_buffer_overflow(mock_bleak_client, caplog):
     """Test that saved_data buffer is cleared when it exceeds MAX_SAVED_DATA_SIZE."""
     import logging
 
-    from embodyble.embodyble import MAX_SAVED_DATA_SIZE
-    from embodyble.embodyble import _MessageReader
+    from embodyble.embodyble import MAX_SAVED_DATA_SIZE, _MessageReader
 
     reader = _MessageReader(mock_bleak_client)
     try:
@@ -487,5 +486,87 @@ def test_message_reader_saved_data_buffer_overflow(mock_bleak_client, caplog):
         # Buffer should be cleared (not accumulated)
         assert len(reader.saved_data) <= MAX_SAVED_DATA_SIZE
         assert "buffer overflow" in caplog.text.lower()
+    finally:
+        reader.stop()
+
+
+@pytest.mark.parametrize(
+    "test_name,data_hex,expected_messages,expected_saved_bytes",
+    [
+        # Case 1: Short garbage header (9 bytes) + 2 valid messages
+        (
+            "short_garbage_header",
+            "020000d9980000936d"  # 9-byte garbage header
+            "240011b622ff1732feffff46b80000a264"  # Valid 0x24 message
+            "240011b626ff1787f5ffff4e96000053eb",  # Valid 0x24 message
+            2,
+            0,
+        ),
+        # Case 2: Just valid messages
+        (
+            "valid_messages_only",
+            "240011b622ff1732feffff46b80000a264240011b626ff1787f5ffff4e96000053eb",
+            2,
+            0,
+        ),
+        # Case 3: Single unknown byte + valid message
+        (
+            "single_unknown_byte",
+            "ff240011b622ff1732feffff46b80000a264",
+            1,
+            0,
+        ),
+        # Case 4: Multiple bytes with unknown types + valid message
+        (
+            "multiple_unknown_types",
+            "0203ff00240011b622ff1732feffff46b80000a264",
+            1,
+            0,
+        ),
+        # Case 5: Known type with unreasonable length (tests is_reasonable_len check)
+        (
+            "known_type_unreasonable_length",
+            "93ffff"  # Type 0x93 (known), length 0xFFFF = 65535 (> MAX_SAVED_DATA_SIZE)
+            "240011b622ff1732feffff46b80000a264",
+            1,
+            0,
+        ),
+    ],
+)
+def test_garbage_data_handling(mock_bleak_client, test_name, data_hex, expected_messages, expected_saved_bytes):
+    """Test that garbage bytes before valid messages are handled correctly.
+
+    This tests the fix for Windows BLE data that has garbage header bytes
+    before valid messages. The reader should skip unknown bytes and find
+    valid messages.
+    """
+    from embodyble.embodyble import _MessageReader
+
+    received_messages = []
+
+    mock_listener = Mock()
+    mock_listener.message_received = Mock(side_effect=lambda msg: received_messages.append(msg))
+
+    reader = _MessageReader(mock_bleak_client, message_listeners={mock_listener})
+
+    try:
+        mock_char = Mock()
+        mock_char.uuid = "test-uuid"
+
+        data = bytearray.fromhex(data_hex)
+        reader.on_uart_tx_data(mock_char, data)
+
+        time.sleep(0.2)
+
+        assert len(received_messages) == expected_messages, (
+            f"[{test_name}] Expected {expected_messages} messages, got {len(received_messages)}"
+        )
+        assert all(msg.msg_type == 0x24 for msg in received_messages), (
+            f"[{test_name}] Expected all messages to be type 0x24"
+        )
+        assert len(reader.saved_data) == expected_saved_bytes, (
+            f"[{test_name}] Expected {expected_saved_bytes} saved bytes, got {len(reader.saved_data)}"
+        )
+
     finally:
         reader.stop()
