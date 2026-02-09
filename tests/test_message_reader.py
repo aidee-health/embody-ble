@@ -222,6 +222,8 @@ def test_error_listener_notified_on_buffer_overflow(mock_bleak_client, mock_erro
 
         reader.on_uart_tx_data(mock_gatt_characteristic, bytearray(b"\x00"))
 
+        time.sleep(0.1)
+
         mock_error_listener.on_error.assert_called_once()
         call_args = mock_error_listener.on_error.call_args[0]
         assert call_args[0] == ERROR_TYPE_BUFFER_OVERFLOW
@@ -241,6 +243,8 @@ def test_error_listener_notified_on_resync(mock_bleak_client, mock_error_listene
         garbage = bytearray([0x02, 0x00, 0x00])
         reader.on_uart_tx_data(mock_gatt_characteristic, garbage)
 
+        time.sleep(0.1)
+
         assert mock_error_listener.on_error.call_count >= 1
         # At least one call should be a resync
         error_types = [call[0][0] for call in mock_error_listener.on_error.call_args_list]
@@ -258,6 +262,8 @@ def test_error_listener_notified_on_unknown_message(mock_bleak_client, mock_erro
             # Need enough data for get_meta to work (at least 3 bytes)
             data = bytearray([0xAB, 0x00, 0x05, 0x00, 0x00])
             reader.on_uart_tx_data(mock_gatt_characteristic, data)
+
+        time.sleep(0.1)
 
         error_types = [call[0][0] for call in mock_error_listener.on_error.call_args_list]
         assert ERROR_TYPE_UNKNOWN_MESSAGE in error_types
@@ -281,6 +287,8 @@ def test_error_listener_exception_isolation(mock_bleak_client, mock_gatt_charact
         # Trigger a buffer overflow to fire error listeners
         reader.saved_data = bytearray(b"X" * (MAX_SAVED_DATA_SIZE + 1))
         reader.on_uart_tx_data(mock_gatt_characteristic, bytearray(b"\x00"))
+
+        time.sleep(0.1)
 
         # Both listeners should have been called
         bad_listener.on_error.assert_called_once()

@@ -2,8 +2,35 @@
 
 from abc import ABC
 from abc import abstractmethod
+from enum import StrEnum
+from typing import NotRequired, TypedDict
 
 from embodycodec import codec
+
+
+class ConnectionInfo(TypedDict):
+    """Connection diagnostic information."""
+
+    connected: bool
+    device_name: str | None
+    mtu_size: int | None
+    device_address: NotRequired[str]
+
+
+class BleErrorType(StrEnum):
+    """Types of BLE communication errors."""
+
+    CRC_ERROR = "crc_error"
+    RESYNC = "resync"
+    UNKNOWN_MESSAGE = "unknown_message"
+    BUFFER_OVERFLOW = "buffer_overflow"
+
+
+# Backwards-compatible aliases
+ERROR_TYPE_CRC_ERROR = BleErrorType.CRC_ERROR
+ERROR_TYPE_RESYNC = BleErrorType.RESYNC
+ERROR_TYPE_UNKNOWN_MESSAGE = BleErrorType.UNKNOWN_MESSAGE
+ERROR_TYPE_BUFFER_OVERFLOW = BleErrorType.BUFFER_OVERFLOW
 
 
 class MessageListener(ABC):
@@ -39,22 +66,15 @@ class ConnectionListener(ABC):
         pass
 
 
-ERROR_TYPE_CRC_ERROR = "crc_error"
-ERROR_TYPE_RESYNC = "resync"
-ERROR_TYPE_UNKNOWN_MESSAGE = "unknown_message"
-ERROR_TYPE_BUFFER_OVERFLOW = "buffer_overflow"
-
-
 class ErrorListener(ABC):
     """Listener interface for being notified of BLE communication errors."""
 
     @abstractmethod
-    def on_error(self, error_type: str, message: str) -> None:
+    def on_error(self, error_type: BleErrorType, message: str) -> None:
         """Called when a communication error is detected.
 
         Args:
-            error_type: Type of error - one of ERROR_TYPE_CRC_ERROR, ERROR_TYPE_RESYNC,
-                ERROR_TYPE_UNKNOWN_MESSAGE, ERROR_TYPE_BUFFER_OVERFLOW
+            error_type: Type of error (see BleErrorType enum)
             message: Human-readable error description
         """
         pass

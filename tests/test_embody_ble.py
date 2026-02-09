@@ -574,7 +574,7 @@ def test_error_listener_via_constructor(mock_error_listener):
     """Test that error_listener passed to constructor is added to the set."""
     ble = EmbodyBle(error_listener=mock_error_listener)
     try:
-        assert mock_error_listener in ble._EmbodyBle__error_listeners  # type: ignore[unresolved-attribute]
+        assert ble.has_error_listener(mock_error_listener)
     finally:
         ble.shutdown()
 
@@ -584,10 +584,10 @@ def test_add_remove_error_listeners(mock_error_listener):
     ble = EmbodyBle()
     try:
         ble.add_error_listener(mock_error_listener)
-        assert mock_error_listener in ble._EmbodyBle__error_listeners  # type: ignore[unresolved-attribute]
+        assert ble.has_error_listener(mock_error_listener)
 
         ble.discard_error_listener(mock_error_listener)
-        assert mock_error_listener not in ble._EmbodyBle__error_listeners  # type: ignore[unresolved-attribute]
+        assert not ble.has_error_listener(mock_error_listener)
     finally:
         ble.shutdown()
 
