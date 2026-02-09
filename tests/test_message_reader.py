@@ -1,11 +1,18 @@
 """Test cases for _MessageReader class."""
 
+import time
 from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
+from embodycodec import attributes
 from embodycodec import codec
 
+from embodyble.embodyble import MAX_SAVED_DATA_SIZE
 from embodyble.embodyble import _MessageReader
+from embodyble.listeners import ERROR_TYPE_BUFFER_OVERFLOW
+from embodyble.listeners import ERROR_TYPE_RESYNC
+from embodyble.listeners import ERROR_TYPE_UNKNOWN_MESSAGE
 
 
 @pytest.fixture
@@ -22,8 +29,6 @@ def test_on_uart_tx_data_single_message(message_reader, encoded_test_message, mo
 
     message_reader.on_uart_tx_data(None, bytearray(encoded_test_message))
 
-    import time
-
     time.sleep(0.1)
 
     mock_message_listener.message_received.assert_called_once()
@@ -35,8 +40,6 @@ def test_on_uart_tx_data_multiple_messages(message_reader, mock_message_listener
     """Test receiving multiple messages in one packet."""
     message_reader.add_message_listener(mock_message_listener)
 
-    from embodycodec import attributes
-
     msg1 = codec.AttributeChanged(
         0, attributes.BatteryLevelAttribute.attribute_id, attributes.BatteryLevelAttribute(50)
     )
@@ -47,8 +50,6 @@ def test_on_uart_tx_data_multiple_messages(message_reader, mock_message_listener
     combined_data = bytearray(msg1.encode() + msg2.encode())
 
     message_reader.on_uart_tx_data(None, combined_data)
-
-    import time
 
     time.sleep(0.1)
 
@@ -65,8 +66,6 @@ def test_on_uart_tx_data_fragmented_message(message_reader, fragmented_test_mess
 
 def test_on_uart_tx_data_with_saved_data(message_reader, mock_message_listener):
     """Test concatenating with previously saved fragmented data."""
-    from embodycodec import attributes
-
     msg = codec.AttributeChanged(0, attributes.BatteryLevelAttribute.attribute_id, attributes.BatteryLevelAttribute(60))
     encoded = msg.encode()
 
@@ -80,8 +79,6 @@ def test_on_uart_tx_data_with_saved_data(message_reader, mock_message_listener):
 
     message_reader.on_uart_tx_data(None, bytearray(fragment2))
 
-    import time
-
     time.sleep(0.1)
 
     mock_message_listener.message_received.assert_called_once()
@@ -90,8 +87,6 @@ def test_on_uart_tx_data_with_saved_data(message_reader, mock_message_listener):
 
 def test_message_vs_response_routing(message_reader, mock_message_listener, mock_response_listener):
     """Test routing based on msg_type (< 0x80 vs >= 0x80)."""
-    from embodycodec import attributes
-
     message_reader.add_message_listener(mock_message_listener)
     message_reader.add_response_message_listener(mock_response_listener)
 
@@ -103,8 +98,6 @@ def test_message_vs_response_routing(message_reader, mock_message_listener, mock
     response_msg = codec.SetAttributeResponse()
     message_reader.on_uart_tx_data(None, bytearray(response_msg.encode()))
 
-    import time
-
     time.sleep(0.1)
 
     mock_message_listener.message_received.assert_called_once()
@@ -113,8 +106,6 @@ def test_message_vs_response_routing(message_reader, mock_message_listener, mock
 
 def test_crc_error_handling(message_reader, mock_message_listener, caplog):
     """Test CRC error handling (currently skipped as implementation uses accept_crc_error=True)."""
-    import pytest
-
     pytest.skip("CRC error handling currently accepts CRC errors (accept_crc_error=True)")
 
 
@@ -129,13 +120,9 @@ def test_listener_exception_isolation(message_reader):
     message_reader.add_message_listener(bad_listener)
     message_reader.add_message_listener(good_listener)
 
-    from embodycodec import attributes
-
     msg = codec.AttributeChanged(0, attributes.BatteryLevelAttribute.attribute_id, attributes.BatteryLevelAttribute(50))
 
     message_reader.on_uart_tx_data(None, bytearray(msg.encode()))
-
-    import time
 
     time.sleep(0.1)
 
@@ -167,8 +154,6 @@ def test_on_ble_message_received(message_reader, mock_gatt_characteristic):
     test_data = b"\x64"
     message_reader.on_ble_message_received(mock_gatt_characteristic, test_data)
 
-    import time
-
     time.sleep(0.1)
 
     ble_listener.ble_message_received.assert_called_once()
@@ -193,8 +178,6 @@ def test_stop_shuts_down_executors(message_reader):
 
 def test_hex_operations_only_when_debug_enabled(message_reader):
     """Test that message processing works regardless of log level."""
-    from embodycodec import attributes
-
     msg = codec.AttributeChanged(0, attributes.BatteryLevelAttribute.attribute_id, attributes.BatteryLevelAttribute(50))
 
     message_reader.on_uart_tx_data(None, bytearray(msg.encode()))
@@ -205,3 +188,131 @@ def test_decode_exception_handling(message_reader):
     bad_data = bytearray([0xFF, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
 
     message_reader.on_uart_tx_data(None, bad_data)
+
+
+# Error Listener & Corruption Counter Tests
+
+
+def test_error_listener_add_remove(message_reader, mock_error_listener):
+    """Test adding and removing error listeners on the reader."""
+    message_reader.add_error_listener(mock_error_listener)
+    assert message_reader.has_error_listener(mock_error_listener)
+
+    message_reader.discard_error_listener(mock_error_listener)
+    assert not message_reader.has_error_listener(mock_error_listener)
+
+
+def test_corruption_counters_initial_zero(message_reader):
+    """Test that a fresh reader returns all-zero corruption counters."""
+    counters = message_reader.get_corruption_counters()
+    assert counters == {
+        "crc_errors": 0,
+        "resync_events": 0,
+        "unknown_message_types": 0,
+        "buffer_overflows": 0,
+    }
+
+
+def test_error_listener_notified_on_buffer_overflow(mock_bleak_client, mock_error_listener, mock_gatt_characteristic):
+    """Test that error listener is notified on buffer overflow."""
+    reader = _MessageReader(mock_bleak_client, error_listeners={mock_error_listener})
+    try:
+        # Pre-fill saved_data beyond the limit to trigger overflow
+        reader.saved_data = bytearray(b"X" * (MAX_SAVED_DATA_SIZE + 1))
+
+        reader.on_uart_tx_data(mock_gatt_characteristic, bytearray(b"\x00"))
+
+        time.sleep(0.1)
+
+        mock_error_listener.on_error.assert_called_once()
+        call_args = mock_error_listener.on_error.call_args[0]
+        assert call_args[0] == ERROR_TYPE_BUFFER_OVERFLOW
+        assert "buffer overflow" in call_args[1].lower()
+
+        counters = reader.get_corruption_counters()
+        assert counters["buffer_overflows"] == 1
+    finally:
+        reader.stop()
+
+
+def test_error_listener_notified_on_resync(mock_bleak_client, mock_error_listener, mock_gatt_characteristic):
+    """Test that error listener is notified when garbage data triggers resync."""
+    reader = _MessageReader(mock_bleak_client, error_listeners={mock_error_listener})
+    try:
+        # Feed garbage bytes that will be skipped via resync
+        garbage = bytearray([0x02, 0x00, 0x00])
+        reader.on_uart_tx_data(mock_gatt_characteristic, garbage)
+
+        time.sleep(0.1)
+
+        assert mock_error_listener.on_error.call_count >= 1
+        # At least one call should be a resync
+        error_types = [call[0][0] for call in mock_error_listener.on_error.call_args_list]
+        assert ERROR_TYPE_RESYNC in error_types or ERROR_TYPE_UNKNOWN_MESSAGE in error_types
+    finally:
+        reader.stop()
+
+
+def test_error_listener_notified_on_unknown_message(mock_bleak_client, mock_error_listener, mock_gatt_characteristic):
+    """Test that error listener is notified on unknown message type."""
+    reader = _MessageReader(mock_bleak_client, error_listeners={mock_error_listener})
+    try:
+        # Monkeypatch codec.decode to raise LookupError
+        with patch("embodyble.embodyble.codec.decode", side_effect=LookupError("Unknown type 0xAB")):
+            # Need enough data for get_meta to work (at least 3 bytes)
+            data = bytearray([0xAB, 0x00, 0x05, 0x00, 0x00])
+            reader.on_uart_tx_data(mock_gatt_characteristic, data)
+
+        time.sleep(0.1)
+
+        error_types = [call[0][0] for call in mock_error_listener.on_error.call_args_list]
+        assert ERROR_TYPE_UNKNOWN_MESSAGE in error_types
+
+        counters = reader.get_corruption_counters()
+        assert counters["unknown_message_types"] >= 1
+    finally:
+        reader.stop()
+
+
+def test_error_listener_exception_isolation(mock_bleak_client, mock_gatt_characteristic):
+    """Test that a failing error listener doesn't prevent other listeners from being notified."""
+    bad_listener = Mock()
+    bad_listener.on_error = Mock(side_effect=Exception("Listener failed"))
+
+    good_listener = Mock()
+    good_listener.on_error = Mock()
+
+    reader = _MessageReader(mock_bleak_client, error_listeners={bad_listener, good_listener})
+    try:
+        # Trigger a buffer overflow to fire error listeners
+        reader.saved_data = bytearray(b"X" * (MAX_SAVED_DATA_SIZE + 1))
+        reader.on_uart_tx_data(mock_gatt_characteristic, bytearray(b"\x00"))
+
+        time.sleep(0.1)
+
+        # Both listeners should have been called
+        bad_listener.on_error.assert_called_once()
+        good_listener.on_error.assert_called_once()
+    finally:
+        reader.stop()
+
+
+def test_corruption_counters_after_errors(mock_bleak_client, mock_gatt_characteristic):
+    """Test corruption counters accumulate correctly after multiple error types."""
+    reader = _MessageReader(mock_bleak_client)
+    try:
+        # Trigger buffer overflow
+        reader.saved_data = bytearray(b"X" * (MAX_SAVED_DATA_SIZE + 1))
+        reader.on_uart_tx_data(mock_gatt_characteristic, bytearray(b"\x00"))
+
+        # Trigger unknown message type via monkeypatch
+        with patch("embodyble.embodyble.codec.decode", side_effect=LookupError("Unknown")):
+            reader.on_uart_tx_data(mock_gatt_characteristic, bytearray([0xAB, 0x00, 0x05, 0x00, 0x00]))
+
+        counters = reader.get_corruption_counters()
+        assert counters["buffer_overflows"] == 1
+        assert counters["unknown_message_types"] >= 1
+        total = sum(counters.values())
+        assert total >= 2
+    finally:
+        reader.stop()

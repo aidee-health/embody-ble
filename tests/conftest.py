@@ -8,6 +8,8 @@ import pytest
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from embodycodec import attributes
 from embodycodec import codec
+from embodyserial import embodyserial
+from embodyserial.helpers import EmbodySendHelper
 
 
 @pytest.fixture
@@ -113,9 +115,6 @@ def mock_embody_serial(monkeypatch):
     mock_helper.get_firmware_version.return_value = "5.5.0"
 
     # Mock the EmbodySerial and EmbodySendHelper classes
-    from embodyserial import embodyserial
-    from embodyserial.helpers import EmbodySendHelper
-
     monkeypatch.setattr(embodyserial, "EmbodySerial", lambda: mock_serial)
     monkeypatch.setattr(EmbodySendHelper, "__init__", lambda self, sender: None)
     monkeypatch.setattr(EmbodySendHelper, "get_serial_no", lambda self: "TEST1234")
@@ -154,6 +153,14 @@ def mock_connection_listener():
     """Create a mock ConnectionListener."""
     listener = Mock()
     listener.on_connected = Mock()
+    return listener
+
+
+@pytest.fixture
+def mock_error_listener():
+    """Create a mock ErrorListener."""
+    listener = Mock()
+    listener.on_error = Mock()
     return listener
 
 

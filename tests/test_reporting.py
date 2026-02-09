@@ -1,6 +1,9 @@
 """Test cases for the reporting module."""
 
 import queue
+from datetime import UTC
+from datetime import datetime
+from unittest.mock import Mock
 
 import pytest
 from embodycodec import attributes
@@ -8,6 +11,9 @@ from embodycodec import codec
 
 from embodyble.reporting import AttributeChangedListener
 from embodyble.reporting import AttributeChangedMessageListener
+from embodyble.reporting import EmbodyReporter
+from embodyble.reporting import convert_from_gatt_current_time
+from embodyble.reporting import convert_to_gatt_current_time
 
 
 class BlockingQueueAttributeChangedListener(AttributeChangedListener):
@@ -61,8 +67,6 @@ def test_attribute_changed_message_for_battery_level(
 )
 def test_attribute_routing(attribute, callback_name, expected_value):
     """Test that different attributes route to correct callbacks (DRY with parametrize)."""
-    from unittest.mock import Mock
-
     listener = Mock()
     message_listener = AttributeChangedMessageListener(listener)
 
@@ -74,9 +78,6 @@ def test_attribute_routing(attribute, callback_name, expected_value):
 
 def test_embody_reporter_init():
     """Test EmbodyReporter registers listener correctly."""
-    from unittest.mock import Mock
-    from embodyble.reporting import EmbodyReporter
-
     mock_ble = Mock()
     EmbodyReporter(mock_ble)
 
@@ -94,9 +95,6 @@ def test_embody_reporter_init():
 )
 def test_start_stop_reporting_sends_messages(method_name, expected_msg_type, attribute_id):
     """Test that start/stop methods send correct messages (DRY with parametrize)."""
-    from unittest.mock import Mock
-    from embodyble.reporting import EmbodyReporter
-
     mock_ble = Mock()
     reporter = EmbodyReporter(mock_ble)
 
@@ -123,9 +121,6 @@ def test_start_stop_reporting_sends_messages(method_name, expected_msg_type, att
 )
 def test_ble_read_methods(method_name, uuid, expected_value):
     """Test BLE read methods (DRY with parametrize)."""
-    from unittest.mock import Mock
-    from embodyble.reporting import EmbodyReporter
-
     mock_ble = Mock()
     # Setup mock return values
     if isinstance(expected_value, str):
@@ -142,9 +137,6 @@ def test_ble_read_methods(method_name, uuid, expected_value):
 
 def test_gatt_time_conversion_roundtrip():
     """Test GATT time conversion roundtrip."""
-    from datetime import datetime, UTC
-    from embodyble.reporting import convert_to_gatt_current_time, convert_from_gatt_current_time
-
     original = datetime(2025, 10, 13, 14, 30, 45, tzinfo=UTC)
     gatt_bytes = convert_to_gatt_current_time(original)
     restored = convert_from_gatt_current_time(gatt_bytes)

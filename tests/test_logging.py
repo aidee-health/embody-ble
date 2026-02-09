@@ -5,6 +5,7 @@ import logging
 from contextlib import redirect_stderr
 from contextlib import redirect_stdout
 
+import embodyble  # noqa: F401
 from embodyble.logging import configure_library_logging
 from embodyble.logging import get_logger
 
@@ -80,8 +81,6 @@ def test_configure_library_logging():
 def test_null_handler_by_default():
     """Test that library has NullHandler by default or no output."""
     # Import the package to ensure __init__ has run
-    import embodyble  # noqa: F401
-
     embodyble_logger = logging.getLogger("embodyble")
 
     # Should either have a NullHandler, or if handlers were configured by other tests,
