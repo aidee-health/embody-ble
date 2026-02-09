@@ -39,6 +39,12 @@ class ConnectionListener(ABC):
         pass
 
 
+ERROR_TYPE_CRC_ERROR = "crc_error"
+ERROR_TYPE_RESYNC = "resync"
+ERROR_TYPE_UNKNOWN_MESSAGE = "unknown_message"
+ERROR_TYPE_BUFFER_OVERFLOW = "buffer_overflow"
+
+
 class ErrorListener(ABC):
     """Listener interface for being notified of BLE communication errors."""
 
@@ -47,7 +53,8 @@ class ErrorListener(ABC):
         """Called when a communication error is detected.
 
         Args:
-            error_type: Type of error - one of "crc_error", "resync", "unknown_message", "buffer_overflow"
+            error_type: Type of error - one of ERROR_TYPE_CRC_ERROR, ERROR_TYPE_RESYNC,
+                ERROR_TYPE_UNKNOWN_MESSAGE, ERROR_TYPE_BUFFER_OVERFLOW
             message: Human-readable error description
         """
         pass

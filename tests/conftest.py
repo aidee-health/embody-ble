@@ -157,6 +157,14 @@ def mock_connection_listener():
 
 
 @pytest.fixture
+def mock_error_listener():
+    """Create a mock ErrorListener."""
+    listener = Mock()
+    listener.on_error = Mock()
+    return listener
+
+
+@pytest.fixture
 def mock_scanner_class(mock_bleak_scanner, monkeypatch):
     """Patch BleakScanner to return mock scanner."""
 

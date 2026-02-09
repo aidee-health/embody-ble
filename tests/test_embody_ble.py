@@ -565,3 +565,85 @@ def test_garbage_data_handling(mock_bleak_client, test_name, data_hex, expected_
 
     finally:
         reader.stop()
+
+
+# Diagnostics & Error Listener Tests
+
+
+def test_error_listener_via_constructor(mock_error_listener):
+    """Test that error_listener passed to constructor is added to the set."""
+    ble = EmbodyBle(error_listener=mock_error_listener)
+    try:
+        assert mock_error_listener in ble._EmbodyBle__error_listeners  # type: ignore[unresolved-attribute]
+    finally:
+        ble.shutdown()
+
+
+def test_add_remove_error_listeners(mock_error_listener):
+    """Test adding and removing error listeners on EmbodyBle."""
+    ble = EmbodyBle()
+    try:
+        ble.add_error_listener(mock_error_listener)
+        assert mock_error_listener in ble._EmbodyBle__error_listeners  # type: ignore[unresolved-attribute]
+
+        ble.discard_error_listener(mock_error_listener)
+        assert mock_error_listener not in ble._EmbodyBle__error_listeners  # type: ignore[unresolved-attribute]
+    finally:
+        ble.shutdown()
+
+
+def test_mtu_size_when_not_connected():
+    """Test that mtu_size returns None when not connected."""
+    ble = EmbodyBle()
+    try:
+        assert ble.mtu_size is None
+    finally:
+        ble.shutdown()
+
+
+def test_get_connection_info_when_not_connected():
+    """Test get_connection_info returns sensible defaults when not connected."""
+    ble = EmbodyBle()
+    try:
+        info = ble.get_connection_info()
+        assert info["connected"] is False
+        assert info["device_name"] is None
+        assert info["mtu_size"] is None
+        assert "device_address" not in info
+    finally:
+        ble.shutdown()
+
+
+def test_get_corruption_counters_when_not_connected():
+    """Test get_corruption_counters returns all-zero dict when no reader exists."""
+    ble = EmbodyBle()
+    try:
+        counters = ble.get_corruption_counters()
+        assert counters == {
+            "crc_errors": 0,
+            "resync_events": 0,
+            "unknown_message_types": 0,
+            "buffer_overflows": 0,
+        }
+    finally:
+        ble.shutdown()
+
+
+def test_error_listener_independent_set_on_reader(
+    mock_scanner_class, mock_client_class, mock_bleak_device, mock_error_listener
+):
+    """Test that after connect, the reader has its own copy of the error listeners set."""
+    ble = EmbodyBle(error_listener=mock_error_listener)
+    try:
+        mock_scanner_class.discovered_devices = [mock_bleak_device]
+        ble.connect(device_name="EmBody_1234")
+
+        # The reader's error_listeners set should be a separate object from EmbodyBle's
+        ble_set = ble._EmbodyBle__error_listeners  # type: ignore[unresolved-attribute]
+        reader_set = ble._EmbodyBle__reader._MessageReader__error_listeners  # type: ignore[unresolved-attribute]
+        assert ble_set is not reader_set
+
+        # But they should contain the same listener
+        assert mock_error_listener in reader_set
+    finally:
+        ble.shutdown()
