@@ -409,20 +409,13 @@ class _MessageReader:
         self.__message_listener_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="rcv-worker")
         self.__ble_message_listener_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="ble-msg-worker")
         self.__error_listener_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="err-worker")
-        if message_listeners is not None:
-            self.__message_listeners = message_listeners
-        else:
-            self.__message_listeners = set()
+        self.__message_listeners = set(message_listeners) if message_listeners is not None else set()
         self.__message_listeners_lock = threading.Lock()
-        if ble_message_listeners is not None:
-            self.__ble_message_listeners = ble_message_listeners
-        else:
-            self.__ble_message_listeners = set()
+        self.__ble_message_listeners = set(ble_message_listeners) if ble_message_listeners is not None else set()
         self.__ble_message_listeners_lock = threading.Lock()
-        if response_message_listeners is not None:
-            self.__response_message_listeners = response_message_listeners
-        else:
-            self.__response_message_listeners = set()
+        self.__response_message_listeners = (
+            set(response_message_listeners) if response_message_listeners is not None else set()
+        )
         self.__response_message_listeners_lock = threading.Lock()
         self.__error_listeners = set(error_listeners) if error_listeners is not None else set()
         self.__error_listeners_lock = threading.Lock()
@@ -460,6 +453,11 @@ class _MessageReader:
     def discard_error_listener(self, listener: ErrorListener) -> None:
         with self.__error_listeners_lock:
             self.__error_listeners.discard(listener)
+
+    def has_error_listener(self, listener: ErrorListener) -> bool:
+        """Check if an error listener is registered."""
+        with self.__error_listeners_lock:
+            return listener in self.__error_listeners
 
     def __notify_error_listeners(self, error_type: BleErrorType, message: str) -> None:
         with self.__error_listeners_lock:
@@ -596,7 +594,7 @@ class _MessageReader:
                         f"of {len(data)} in Data={data.hex()}"
                     )
                     logger.warning(error_msg)
-                    logger.warning("".join(traceback.format_exception(Exception, e, e.__traceback__)))
+                    logger.warning("".join(traceback.format_exception(type(e), e, e.__traceback__)))
                     self.__notify_error_listeners(BleErrorType.RESYNC, error_msg)
                     pos += max(msglen, 1)  # Skip message length to keep sync, ensure progress
                 except Exception:
@@ -625,8 +623,9 @@ class _MessageReader:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"Handling new incoming message: {msg}")
         with self.__message_listeners_lock:
-            for listener in self.__message_listeners:
-                self.__message_listener_executor.submit(_MessageReader.__notify_message_listener, listener, msg)
+            listeners = set(self.__message_listeners)
+        for listener in listeners:
+            self.__message_listener_executor.submit(_MessageReader.__notify_message_listener, listener, msg)
 
     @staticmethod
     def __notify_message_listener(listener: MessageListener, msg: codec.Message) -> None:
@@ -667,8 +666,9 @@ class _MessageReader:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"Handling new response message: {msg}")
         with self.__response_message_listeners_lock:
-            for listener in self.__response_message_listeners:
-                _MessageReader.__notify_rsp_message_listener(listener, msg)
+            listeners = set(self.__response_message_listeners)
+        for listener in listeners:
+            _MessageReader.__notify_rsp_message_listener(listener, msg)
 
     @staticmethod
     def __notify_rsp_message_listener(listener: ResponseMessageListener, msg: codec.Message) -> None:
@@ -681,10 +681,11 @@ class _MessageReader:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"Handling new BLE message. UUID: {uuid}, data: {data.hex()}")
         with self.__ble_message_listeners_lock:
-            for listener in self.__ble_message_listeners:
-                self.__ble_message_listener_executor.submit(
-                    _MessageReader.__notify_ble_message_listener, listener, uuid, data
-                )
+            listeners = set(self.__ble_message_listeners)
+        for listener in listeners:
+            self.__ble_message_listener_executor.submit(
+                _MessageReader.__notify_ble_message_listener, listener, uuid, data
+            )
 
     @staticmethod
     def __notify_ble_message_listener(listener: BleMessageListener, uuid: str, data: bytes | bytearray) -> None:

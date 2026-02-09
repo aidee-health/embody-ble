@@ -196,10 +196,10 @@ def test_decode_exception_handling(message_reader):
 def test_error_listener_add_remove(message_reader, mock_error_listener):
     """Test adding and removing error listeners on the reader."""
     message_reader.add_error_listener(mock_error_listener)
-    assert mock_error_listener in message_reader._MessageReader__error_listeners
+    assert message_reader.has_error_listener(mock_error_listener)
 
     message_reader.discard_error_listener(mock_error_listener)
-    assert mock_error_listener not in message_reader._MessageReader__error_listeners
+    assert not message_reader.has_error_listener(mock_error_listener)
 
 
 def test_corruption_counters_initial_zero(message_reader):
