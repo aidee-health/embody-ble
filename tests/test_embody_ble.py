@@ -1,12 +1,17 @@
 """Test cases for the embody ble module."""
 
 import asyncio
+import logging
 import time
 from unittest.mock import Mock
 
 import pytest
+from embodycodec import attributes
+from embodycodec import codec
 
+from embodyble.embodyble import MAX_SAVED_DATA_SIZE
 from embodyble.embodyble import EmbodyBle
+from embodyble.embodyble import _MessageReader
 from embodyble.exceptions import EmbodyBleError
 
 
@@ -285,8 +290,6 @@ def test_listener_registration_propagates_to_reader(
 
 def test_send_raises_when_not_connected():
     """Test that send raises EmbodyBleError when sender not initialized."""
-    from embodycodec import attributes, codec
-
     ble = EmbodyBle()
     try:
         msg = codec.AttributeChanged(
@@ -301,8 +304,6 @@ def test_send_raises_when_not_connected():
 
 def test_send_async_raises_when_not_connected():
     """Test that send_async raises EmbodyBleError when sender not initialized."""
-    from embodycodec import attributes, codec
-
     ble = EmbodyBle()
     try:
         msg = codec.AttributeChanged(
@@ -466,10 +467,6 @@ def test_on_disconnected_callback(mock_scanner_class, mock_client_class, mock_bl
 
 def test_message_reader_saved_data_buffer_overflow(mock_bleak_client, caplog):
     """Test that saved_data buffer is cleared when it exceeds MAX_SAVED_DATA_SIZE."""
-    import logging
-
-    from embodyble.embodyble import MAX_SAVED_DATA_SIZE, _MessageReader
-
     reader = _MessageReader(mock_bleak_client)
     try:
         # Pre-fill saved_data beyond the limit
@@ -540,12 +537,10 @@ def test_garbage_data_handling(mock_bleak_client, test_name, data_hex, expected_
     before valid messages. The reader should skip unknown bytes and find
     valid messages.
     """
-    from embodyble.embodyble import _MessageReader
-
     received_messages = []
 
     mock_listener = Mock()
-    mock_listener.message_received = Mock(side_effect=lambda msg: received_messages.append(msg))
+    mock_listener.message_received = Mock(side_effect=received_messages.append)
 
     reader = _MessageReader(mock_bleak_client, message_listeners={mock_listener})
 

@@ -1,6 +1,7 @@
 """Test cases for utils module (FileReceiver)."""
 
 import io
+import threading
 import time
 from unittest.mock import Mock
 
@@ -303,8 +304,6 @@ def test_concurrent_timeout_handlers(file_receiver):
 
 def test_completion_during_timeout_check(file_receiver):
     """Test thread-safe completion when timeout and chunk arrive concurrently."""
-    import threading
-
     done_callback = Mock()
     file_receiver.get_file("test.bin", 100, done_callback=done_callback, chunk_timeout=10.0)
 
@@ -344,8 +343,6 @@ def test_completion_during_timeout_check(file_receiver):
 
 def test_stress_concurrent_callbacks(file_receiver):
     """Stress test: multiple threads trying to invoke callback simultaneously."""
-    import threading
-
     done_callback = Mock()
     file_receiver.get_file("test.bin", 100, done_callback=done_callback, chunk_timeout=10.0)
 

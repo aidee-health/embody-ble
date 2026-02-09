@@ -1,8 +1,10 @@
 """Test cases for _MessageReader class."""
 
+import time
 from unittest.mock import Mock
 
 import pytest
+from embodycodec import attributes
 from embodycodec import codec
 
 from embodyble.embodyble import _MessageReader
@@ -22,8 +24,6 @@ def test_on_uart_tx_data_single_message(message_reader, encoded_test_message, mo
 
     message_reader.on_uart_tx_data(None, bytearray(encoded_test_message))
 
-    import time
-
     time.sleep(0.1)
 
     mock_message_listener.message_received.assert_called_once()
@@ -35,8 +35,6 @@ def test_on_uart_tx_data_multiple_messages(message_reader, mock_message_listener
     """Test receiving multiple messages in one packet."""
     message_reader.add_message_listener(mock_message_listener)
 
-    from embodycodec import attributes
-
     msg1 = codec.AttributeChanged(
         0, attributes.BatteryLevelAttribute.attribute_id, attributes.BatteryLevelAttribute(50)
     )
@@ -47,8 +45,6 @@ def test_on_uart_tx_data_multiple_messages(message_reader, mock_message_listener
     combined_data = bytearray(msg1.encode() + msg2.encode())
 
     message_reader.on_uart_tx_data(None, combined_data)
-
-    import time
 
     time.sleep(0.1)
 
@@ -65,8 +61,6 @@ def test_on_uart_tx_data_fragmented_message(message_reader, fragmented_test_mess
 
 def test_on_uart_tx_data_with_saved_data(message_reader, mock_message_listener):
     """Test concatenating with previously saved fragmented data."""
-    from embodycodec import attributes
-
     msg = codec.AttributeChanged(0, attributes.BatteryLevelAttribute.attribute_id, attributes.BatteryLevelAttribute(60))
     encoded = msg.encode()
 
@@ -80,8 +74,6 @@ def test_on_uart_tx_data_with_saved_data(message_reader, mock_message_listener):
 
     message_reader.on_uart_tx_data(None, bytearray(fragment2))
 
-    import time
-
     time.sleep(0.1)
 
     mock_message_listener.message_received.assert_called_once()
@@ -90,8 +82,6 @@ def test_on_uart_tx_data_with_saved_data(message_reader, mock_message_listener):
 
 def test_message_vs_response_routing(message_reader, mock_message_listener, mock_response_listener):
     """Test routing based on msg_type (< 0x80 vs >= 0x80)."""
-    from embodycodec import attributes
-
     message_reader.add_message_listener(mock_message_listener)
     message_reader.add_response_message_listener(mock_response_listener)
 
@@ -103,8 +93,6 @@ def test_message_vs_response_routing(message_reader, mock_message_listener, mock
     response_msg = codec.SetAttributeResponse()
     message_reader.on_uart_tx_data(None, bytearray(response_msg.encode()))
 
-    import time
-
     time.sleep(0.1)
 
     mock_message_listener.message_received.assert_called_once()
@@ -113,8 +101,6 @@ def test_message_vs_response_routing(message_reader, mock_message_listener, mock
 
 def test_crc_error_handling(message_reader, mock_message_listener, caplog):
     """Test CRC error handling (currently skipped as implementation uses accept_crc_error=True)."""
-    import pytest
-
     pytest.skip("CRC error handling currently accepts CRC errors (accept_crc_error=True)")
 
 
@@ -129,13 +115,9 @@ def test_listener_exception_isolation(message_reader):
     message_reader.add_message_listener(bad_listener)
     message_reader.add_message_listener(good_listener)
 
-    from embodycodec import attributes
-
     msg = codec.AttributeChanged(0, attributes.BatteryLevelAttribute.attribute_id, attributes.BatteryLevelAttribute(50))
 
     message_reader.on_uart_tx_data(None, bytearray(msg.encode()))
-
-    import time
 
     time.sleep(0.1)
 
@@ -167,8 +149,6 @@ def test_on_ble_message_received(message_reader, mock_gatt_characteristic):
     test_data = b"\x64"
     message_reader.on_ble_message_received(mock_gatt_characteristic, test_data)
 
-    import time
-
     time.sleep(0.1)
 
     ble_listener.ble_message_received.assert_called_once()
@@ -193,8 +173,6 @@ def test_stop_shuts_down_executors(message_reader):
 
 def test_hex_operations_only_when_debug_enabled(message_reader):
     """Test that message processing works regardless of log level."""
-    from embodycodec import attributes
-
     msg = codec.AttributeChanged(0, attributes.BatteryLevelAttribute.attribute_id, attributes.BatteryLevelAttribute(50))
 
     message_reader.on_uart_tx_data(None, bytearray(msg.encode()))

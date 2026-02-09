@@ -37,3 +37,17 @@ class ConnectionListener(ABC):
     def on_connected(self, connected: bool) -> None:
         """Process connection status."""
         pass
+
+
+class ErrorListener(ABC):
+    """Listener interface for being notified of BLE communication errors."""
+
+    @abstractmethod
+    def on_error(self, error_type: str, message: str) -> None:
+        """Called when a communication error is detected.
+
+        Args:
+            error_type: Type of error - one of "crc_error", "resync", "unknown_message", "buffer_overflow"
+            message: Human-readable error description
+        """
+        pass

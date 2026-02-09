@@ -20,7 +20,7 @@ from embodyserial.helpers import EmbodySendHelper
 from packaging import version
 
 from .exceptions import EmbodyBleError
-from .listeners import BleMessageListener, ConnectionListener, MessageListener, ResponseMessageListener
+from .listeners import BleMessageListener, ConnectionListener, ErrorListener, MessageListener, ResponseMessageListener
 
 logger = logging.getLogger(__name__)
 
@@ -58,10 +58,12 @@ class EmbodyBle(embodyserial.EmbodySender):
         self.__client: BleakClient | None = None
         self.__reader: _MessageReader | None = None
         self.__sender: _MessageSender | None = None
+        self.__device_name: str | None = None
         self.__message_listeners: set[MessageListener] = set()
         self.__response_msg_listeners: set[ResponseMessageListener] = set()
         self.__ble_message_listeners: set[BleMessageListener] = set()
         self.__connection_listeners: set[ConnectionListener] = set()
+        self.__error_listeners: set[ErrorListener] = set()
         if msg_listener:
             self.__message_listeners.add(msg_listener)
         if response_msg_listener:
@@ -80,6 +82,45 @@ class EmbodyBle(embodyserial.EmbodySender):
         asyncio.set_event_loop(loop)
         loop.run_forever()
 
+    @property
+    def mtu_size(self) -> int | None:
+        """Return the negotiated MTU size, or None if not connected."""
+        if self.__client and self.__client.is_connected:
+            return self.__client.mtu_size
+        return None
+
+    def get_connection_info(self) -> dict:
+        """Return a dict with current BLE connection diagnostics."""
+        info: dict = {
+            "connected": self.__client is not None and self.__client.is_connected,
+            "device_name": self.__device_name,
+            "mtu_size": self.mtu_size,
+        }
+        if self.__client and self.__client.is_connected:
+            info["device_address"] = self.__client.address
+        return info
+
+    def get_corruption_counters(self) -> dict:
+        """Return corruption/error counters from the message reader."""
+        if self.__reader:
+            return self.__reader.get_corruption_counters()
+        return {
+            "crc_errors": 0,
+            "resync_events": 0,
+            "unknown_message_types": 0,
+            "buffer_overflows": 0,
+        }
+
+    def add_error_listener(self, listener: ErrorListener) -> None:
+        self.__error_listeners.add(listener)
+        if self.__reader:
+            self.__reader.add_error_listener(listener)
+
+    def discard_error_listener(self, listener: ErrorListener) -> None:
+        self.__error_listeners.discard(listener)
+        if self.__reader:
+            self.__reader.discard_error_listener(listener)
+
     def connect(self, device_name: str | None = None) -> None:
         asyncio.run_coroutine_threadsafe(self.__async_connect(device_name), self.__loop).result()
 
@@ -97,8 +138,10 @@ class EmbodyBle(embodyserial.EmbodySender):
         scanner = BleakScanner()
 
         device = await scanner.find_device_by_filter(
-            lambda d, ad: bool(ad.local_name and ad.local_name.lower() == self.__device_name.lower())
-            or bool(d and d.name and d.name.lower() == self.__device_name.lower())
+            lambda d, ad: (
+                bool(ad.local_name and ad.local_name.lower() == self.__device_name.lower())
+                or bool(d and d.name and d.name.lower() == self.__device_name.lower())
+            )
         )
         if not device:
             raise EmbodyBleError(f"Could not find device with name {self.__device_name}")
@@ -112,6 +155,7 @@ class EmbodyBle(embodyserial.EmbodySender):
             self.__message_listeners,
             self.__ble_message_listeners,
             self.__response_msg_listeners,
+            self.__error_listeners,
         )
         self.__sender = _MessageSender(self.__client)
         self.__reader.add_response_message_listener(self.__sender)
@@ -324,6 +368,7 @@ class _MessageReader:
         message_listeners: set[MessageListener] | None = None,
         ble_message_listeners: set[BleMessageListener] | None = None,
         response_message_listeners: set[ResponseMessageListener] | None = None,
+        error_listeners: set[ErrorListener] | None = None,
     ) -> None:
         """Initialize MessageReader."""
         super().__init__()
@@ -345,8 +390,18 @@ class _MessageReader:
         else:
             self.__response_message_listeners = set()
         self.__response_message_listeners_lock = threading.Lock()
+        if error_listeners is not None:
+            self.__error_listeners = error_listeners
+        else:
+            self.__error_listeners = set()
+        self.__error_listeners_lock = threading.Lock()
         self.saved_data = bytearray()
         self.__stopped = False
+        # Corruption counters
+        self.__crc_errors = 0
+        self.__resync_events = 0
+        self.__unknown_message_types = 0
+        self.__buffer_overflows = 0
 
     def stop(self) -> None:
         if self.__stopped:
@@ -354,6 +409,31 @@ class _MessageReader:
         self.__stopped = True
         self.__message_listener_executor.shutdown(wait=False, cancel_futures=False)
         self.__ble_message_listener_executor.shutdown(wait=False, cancel_futures=False)
+
+    def get_corruption_counters(self) -> dict:
+        """Return current corruption counter values."""
+        return {
+            "crc_errors": self.__crc_errors,
+            "resync_events": self.__resync_events,
+            "unknown_message_types": self.__unknown_message_types,
+            "buffer_overflows": self.__buffer_overflows,
+        }
+
+    def add_error_listener(self, listener: ErrorListener) -> None:
+        with self.__error_listeners_lock:
+            self.__error_listeners.add(listener)
+
+    def discard_error_listener(self, listener: ErrorListener) -> None:
+        with self.__error_listeners_lock:
+            self.__error_listeners.discard(listener)
+
+    def __notify_error_listeners(self, error_type: str, message: str) -> None:
+        with self.__error_listeners_lock:
+            for listener in self.__error_listeners:
+                try:
+                    listener.on_error(error_type, message)
+                except Exception as e:
+                    logger.warning(f"Error notifying error listener: {e!s}", exc_info=True)
 
     async def start_ble_notify(self, uuid: str) -> None:
         """Start notification on a given characteristic."""
@@ -379,6 +459,11 @@ class _MessageReader:
         if len(self.saved_data) > 0:
             if len(self.saved_data) > MAX_SAVED_DATA_SIZE:
                 logger.warning(f"Saved data buffer overflow ({len(self.saved_data)} bytes), clearing")
+                self.__buffer_overflows += 1
+                self.__notify_error_listeners(
+                    "buffer_overflow",
+                    f"Saved data buffer overflow ({len(self.saved_data)} bytes), clearing",
+                )
                 self.saved_data = bytearray()
             else:
                 if logger.isEnabledFor(logging.DEBUG):
@@ -405,6 +490,12 @@ class _MessageReader:
 
                     if not is_known_type or not is_reasonable_len:
                         # Unknown type or unreasonable length = garbage, skip 1 byte
+                        self.__resync_events += 1
+                        self.__notify_error_listeners(
+                            "resync",
+                            f"BufferError at pos {pos}: type=0x{msg_type:02x} "
+                            f"(known={is_known_type}), len={claimed_len}. Skipping 1 byte.",
+                        )
                         if logger.isEnabledFor(logging.DEBUG):
                             logger.debug(
                                 f"BufferError at pos {pos}: type=0x{msg_type:02x} "
@@ -423,34 +514,49 @@ class _MessageReader:
                 self.saved_data = data[pos:]
                 break
             except CrcError as e:
+                self.__crc_errors += 1
                 try:
                     (msgtype, msglen) = codec.Message.get_meta(bytes(data[pos:]))
-                    logger.warning(
-                        f"CRC error {e!r} at position {pos} for message type {hex(msgtype)} with length {msglen} in Data={data.hex()}"
+                    error_msg = (
+                        f"CRC error {e!r} at position {pos} for message type {hex(msgtype)} "
+                        f"with length {msglen} in Data={data.hex()}"
                     )
+                    logger.warning(error_msg)
+                    self.__notify_error_listeners("crc_error", error_msg)
                     pos += msglen  # Skip entire packet to resync, assuming fault is NOT in the length field!
                 except Exception:
-                    logger.warning(f"CRC error {e!r} at position {pos}, unable to get message meta, skipping 1 byte")
+                    error_msg = f"CRC error {e!r} at position {pos}, unable to get message meta, skipping 1 byte"
+                    logger.warning(error_msg)
+                    self.__notify_error_listeners("crc_error", error_msg)
                     pos += 1  # Skip one byte to try resync
                 continue
             except LookupError as e:
                 # Unknown message type - don't trust the length field, just skip 1 byte
+                self.__unknown_message_types += 1
+                self.__notify_error_listeners(
+                    "unknown_message",
+                    f"Unknown message type at position {pos}, skipping 1 byte to resync: {e!r}",
+                )
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f"Unknown message type at position {pos}, skipping 1 byte to resync: {e!r}")
                 pos += 1
                 continue
             except Exception as e:
+                self.__resync_events += 1
                 try:
                     (msgtype, msglen) = codec.Message.get_meta(bytes(data[pos:]))
-                    logger.warning(
-                        f"Receive error in on_uart_tx_data(): {e!r} at position {pos} of {len(data)} in Data={data.hex()}"
+                    error_msg = (
+                        f"Receive error in on_uart_tx_data(): {e!r} at position {pos} "
+                        f"of {len(data)} in Data={data.hex()}"
                     )
+                    logger.warning(error_msg)
                     logger.warning("".join(traceback.format_exception(Exception, e, e.__traceback__)))
+                    self.__notify_error_listeners("resync", error_msg)
                     pos += max(msglen, 1)  # Skip message length to keep sync, ensure progress
                 except Exception:
-                    logger.warning(
-                        f"Receive error {e!r} at position {pos}, unable to get message meta, skipping 1 byte"
-                    )
+                    error_msg = f"Receive error {e!r} at position {pos}, unable to get message meta, skipping 1 byte"
+                    logger.warning(error_msg)
+                    self.__notify_error_listeners("resync", error_msg)
                     pos += 1  # Skip one byte to try resync
                 continue
 
