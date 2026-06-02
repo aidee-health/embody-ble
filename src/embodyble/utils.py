@@ -12,6 +12,7 @@ from embodycodec import types
 from embodyble.embodyble import EmbodyBle
 from embodyble.listeners import ResponseMessageListener
 
+
 logger = logging.getLogger(__name__)
 
 

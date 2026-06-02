@@ -3,6 +3,7 @@
 import importlib.metadata as importlib_metadata
 import logging
 
+
 # Configure NullHandler by default to prevent unwanted logging output
 _library_logger = logging.getLogger("embodyble")
 if not _library_logger.handlers:

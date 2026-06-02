@@ -70,11 +70,6 @@ exclude_lines = [
     "if TYPE_CHECKING:",
 ]
 
-[tool.isort]
-profile = "black"
-force_single_line = true
-lines_after_imports = 2
-
 [tool.ty.environment]
 python-version = "3.12"
 
@@ -150,7 +145,6 @@ ignore = [
     "B905",   # zip() without an explicit strict= parameter
     "PLR2004", # Magic value used in comparison
     "PLR0913", # Too many arguments
-    "I001",   # isort: skip
     "PTH123", # pathlib: skip
     "RUF012", # mutable-class-default
     "PLR0911", # Too many return statements
@@ -163,6 +157,10 @@ convention = "google"
 
 [tool.ruff.lint.mccabe]
 max-complexity = 60
+
+[tool.ruff.lint.isort]
+force-single-line = true
+lines-after-imports = 2
 
 [build-system]
 requires = ["hatchling"]

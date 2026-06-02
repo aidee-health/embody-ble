@@ -1,16 +1,21 @@
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.5
-    hooks:
-      # Run the linter (replaces flake8).
-      - id: ruff
-        types_or: [ python, pyi ]
-        args: [ --fix ]
-      # Run the formatter (replaces black).
-      - id: ruff-format
-        types_or: [ python, pyi ]
   - repo: local
     hooks:
+      # Run ruff via uv so the version always matches the lockfile (single source of truth).
+      # Run the linter (replaces flake8).
+      - id: ruff
+        name: ruff
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [ python, pyi ]
+        require_serial: true
+      # Run the formatter (replaces black).
+      - id: ruff-format
+        name: ruff-format
+        entry: uv run ruff format
+        language: system
+        types_or: [ python, pyi ]
+        require_serial: true
       - id: ty
         name: ty type checker
         entry: uv run ty check
@@ -18,7 +23,7 @@ repos:
         types: [python]
         pass_filenames: false
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v4.4.0"
+    rev: "v6.0.0"
     hooks:
       - id: check-case-conflict
       - id: check-merge-conflict

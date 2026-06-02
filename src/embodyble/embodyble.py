@@ -11,7 +11,8 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 
-from bleak import BleakClient, BleakScanner
+from bleak import BleakClient
+from bleak import BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from embodycodec import codec
 from embodycodec.exceptions import CrcError
@@ -20,15 +21,14 @@ from embodyserial.helpers import EmbodySendHelper
 from packaging import version
 
 from .exceptions import EmbodyBleError
-from .listeners import (
-    BleErrorType,
-    BleMessageListener,
-    ConnectionInfo,
-    ConnectionListener,
-    ErrorListener,
-    MessageListener,
-    ResponseMessageListener,
-)
+from .listeners import BleErrorType
+from .listeners import BleMessageListener
+from .listeners import ConnectionInfo
+from .listeners import ConnectionListener
+from .listeners import ErrorListener
+from .listeners import MessageListener
+from .listeners import ResponseMessageListener
+
 
 logger = logging.getLogger(__name__)
 

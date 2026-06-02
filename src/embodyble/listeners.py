@@ -3,7 +3,8 @@
 from abc import ABC
 from abc import abstractmethod
 from enum import StrEnum
-from typing import NotRequired, TypedDict
+from typing import NotRequired
+from typing import TypedDict
 
 from embodycodec import codec
 
