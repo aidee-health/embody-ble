@@ -4,7 +4,8 @@ import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
-from embodycodec import codec, attributes
+from embodycodec import attributes
+from embodycodec import codec
 
 from embodyble.embodyble import _MessageSender
 

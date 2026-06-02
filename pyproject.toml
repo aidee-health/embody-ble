@@ -1,11 +1,11 @@
 [project]
 name = "embody-ble"
-version = "1.1.30"
+version = "1.1.31"
 description = "Communicate with the EmBody device over BLE (bluetooth)"
 authors = [{name = "Aidee Health AS", email = "hello@aidee.io"}]
 license = "MIT"
 readme = "README.md"
-requires-python = ">=3.11,<4.0"
+requires-python = ">=3.12,<4.0"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
 ]
@@ -70,13 +70,8 @@ exclude_lines = [
     "if TYPE_CHECKING:",
 ]
 
-[tool.isort]
-profile = "black"
-force_single_line = true
-lines_after_imports = 2
-
 [tool.ty.environment]
-python-version = "3.11"
+python-version = "3.12"
 
 [tool.ty.rules]
 # Core reference and assignment errors
@@ -118,7 +113,7 @@ output-format = "full"
 error-on-warning = false
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 120
 
 [tool.ruff.lint]
@@ -150,7 +145,6 @@ ignore = [
     "B905",   # zip() without an explicit strict= parameter
     "PLR2004", # Magic value used in comparison
     "PLR0913", # Too many arguments
-    "I001",   # isort: skip
     "PTH123", # pathlib: skip
     "RUF012", # mutable-class-default
     "PLR0911", # Too many return statements
@@ -163,6 +157,10 @@ convention = "google"
 
 [tool.ruff.lint.mccabe]
 max-complexity = 60
+
+[tool.ruff.lint.isort]
+force-single-line = true
+lines-after-imports = 2
 
 [build-system]
 requires = ["hatchling"]

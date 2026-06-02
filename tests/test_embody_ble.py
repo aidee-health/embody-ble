@@ -35,11 +35,11 @@ def test_embodyble_init_with_listeners(mock_message_listener, mock_response_list
         connection_listener=mock_connection_listener,
     )
     try:
-        assert ble._EmbodyBle__loop is not None  # type: ignore[unresolved-attribute]
-        assert ble._EmbodyBle__loop.is_running()  # type: ignore[unresolved-attribute]
-        assert mock_message_listener in ble._EmbodyBle__message_listeners  # type: ignore[unresolved-attribute]
-        assert mock_response_listener in ble._EmbodyBle__response_msg_listeners  # type: ignore[unresolved-attribute]
-        assert mock_connection_listener in ble._EmbodyBle__connection_listeners  # type: ignore[unresolved-attribute]
+        assert ble._EmbodyBle__loop is not None  # ty: ignore[unresolved-attribute]
+        assert ble._EmbodyBle__loop.is_running()  # ty: ignore[unresolved-attribute]
+        assert mock_message_listener in ble._EmbodyBle__message_listeners  # ty: ignore[unresolved-attribute]
+        assert mock_response_listener in ble._EmbodyBle__response_msg_listeners  # ty: ignore[unresolved-attribute]
+        assert mock_connection_listener in ble._EmbodyBle__connection_listeners  # ty: ignore[unresolved-attribute]
     finally:
         ble.shutdown()
 
@@ -48,11 +48,11 @@ def test_embodyble_init_without_listeners():
     """Test EmbodyBle initialization without any listeners."""
     ble = EmbodyBle()
     try:
-        assert ble._EmbodyBle__loop is not None  # type: ignore[unresolved-attribute]
-        assert ble._EmbodyBle__loop.is_running()  # type: ignore[unresolved-attribute]
-        assert len(ble._EmbodyBle__message_listeners) == 0  # type: ignore[unresolved-attribute]
-        assert len(ble._EmbodyBle__response_msg_listeners) == 0  # type: ignore[unresolved-attribute]
-        assert len(ble._EmbodyBle__connection_listeners) == 0  # type: ignore[unresolved-attribute]
+        assert ble._EmbodyBle__loop is not None  # ty: ignore[unresolved-attribute]
+        assert ble._EmbodyBle__loop.is_running()  # ty: ignore[unresolved-attribute]
+        assert len(ble._EmbodyBle__message_listeners) == 0  # ty: ignore[unresolved-attribute]
+        assert len(ble._EmbodyBle__response_msg_listeners) == 0  # ty: ignore[unresolved-attribute]
+        assert len(ble._EmbodyBle__connection_listeners) == 0  # ty: ignore[unresolved-attribute]
     finally:
         ble.shutdown()
 
@@ -60,7 +60,7 @@ def test_embodyble_init_without_listeners():
 def test_embodyble_shutdown():
     """Test proper cleanup during shutdown."""
     ble = EmbodyBle()
-    loop = ble._EmbodyBle__loop  # type: ignore[unresolved-attribute]
+    loop = ble._EmbodyBle__loop  # ty: ignore[unresolved-attribute]
 
     assert loop.is_running()
 
@@ -71,12 +71,13 @@ def test_background_loop_starts():
     """Test that asyncio event loop starts in background thread."""
     ble = EmbodyBle()
     try:
-        assert ble._EmbodyBle__loop.is_running()  # type: ignore[unresolved-attribute]
+        assert ble._EmbodyBle__loop.is_running()  # ty: ignore[unresolved-attribute]
 
         async def test_coro():
             return 42
 
-        result = asyncio.run_coroutine_threadsafe(test_coro(), ble._EmbodyBle__loop).result(timeout=1)  # type: ignore[unresolved-attribute]
+        loop = ble._EmbodyBle__loop  # ty: ignore[unresolved-attribute]
+        result = asyncio.run_coroutine_threadsafe(test_coro(), loop).result(timeout=1)
         assert result == 42
     finally:
         ble.shutdown()
@@ -88,10 +89,12 @@ def test_multiple_embodyble_instances():
     ble2 = EmbodyBle()
 
     try:
-        assert ble1._EmbodyBle__loop is not ble2._EmbodyBle__loop  # type: ignore[unresolved-attribute]
-        assert ble1._EmbodyBle__loop.is_running()  # type: ignore[unresolved-attribute]
-        assert ble2._EmbodyBle__loop.is_running()  # type: ignore[unresolved-attribute]
-        assert ble1._EmbodyBle__message_listeners is not ble2._EmbodyBle__message_listeners  # type: ignore[unresolved-attribute]
+        assert ble1._EmbodyBle__loop is not ble2._EmbodyBle__loop  # ty: ignore[unresolved-attribute]
+        assert ble1._EmbodyBle__loop.is_running()  # ty: ignore[unresolved-attribute]
+        assert ble2._EmbodyBle__loop.is_running()  # ty: ignore[unresolved-attribute]
+        listeners1 = ble1._EmbodyBle__message_listeners  # ty: ignore[unresolved-attribute]
+        listeners2 = ble2._EmbodyBle__message_listeners  # ty: ignore[unresolved-attribute]
+        assert listeners1 is not listeners2
     finally:
         ble1.shutdown()
         ble2.shutdown()
@@ -108,8 +111,8 @@ def test_connect_with_device_name(mock_scanner_class, mock_client_class, mock_bl
         ble.connect(device_name="EmBody_1234")
 
         mock_client_class.connect.assert_called_once()
-        assert ble._EmbodyBle__reader is not None  # type: ignore[unresolved-attribute]
-        assert ble._EmbodyBle__sender is not None  # type: ignore[unresolved-attribute]
+        assert ble._EmbodyBle__reader is not None  # ty: ignore[unresolved-attribute]
+        assert ble._EmbodyBle__sender is not None  # ty: ignore[unresolved-attribute]
     finally:
         ble.shutdown()
 
@@ -137,8 +140,8 @@ def test_disconnect_when_connected(mock_scanner_class, mock_client_class, mock_b
 
         mock_client_class.stop_notify.assert_called_once()
         assert mock_client_class.disconnect.call_count >= 1
-        assert ble._EmbodyBle__client is None  # type: ignore[unresolved-attribute]
-        assert ble._EmbodyBle__reader is None  # type: ignore[unresolved-attribute]
+        assert ble._EmbodyBle__client is None  # ty: ignore[unresolved-attribute]
+        assert ble._EmbodyBle__reader is None  # ty: ignore[unresolved-attribute]
     finally:
         ble.shutdown()
 
@@ -148,7 +151,7 @@ def test_disconnect_when_not_connected():
     ble = EmbodyBle()
     try:
         ble.disconnect()
-        assert ble._EmbodyBle__client is None  # type: ignore[unresolved-attribute]
+        assert ble._EmbodyBle__client is None  # ty: ignore[unresolved-attribute]
     finally:
         ble.shutdown()
 
@@ -220,19 +223,21 @@ def test_add_remove_message_listeners(mock_scanner_class, mock_client_class, moc
     try:
         # Add listener before connect
         ble.add_message_listener(mock_message_listener)
-        assert mock_message_listener in ble._EmbodyBle__message_listeners  # type: ignore[unresolved-attribute]
+        assert mock_message_listener in ble._EmbodyBle__message_listeners  # ty: ignore[unresolved-attribute]
 
         # Connect
         mock_scanner_class.discovered_devices = [mock_bleak_device]
         ble.connect(device_name="EmBody_1234")
 
         # Listener should be in reader too
-        assert mock_message_listener in ble._EmbodyBle__reader._MessageReader__message_listeners  # type: ignore[unresolved-attribute]
+        reader_listeners = ble._EmbodyBle__reader._MessageReader__message_listeners  # ty: ignore[unresolved-attribute]
+        assert mock_message_listener in reader_listeners
 
         # Remove listener
         ble.discard_message_listener(mock_message_listener)
-        assert mock_message_listener not in ble._EmbodyBle__message_listeners  # type: ignore[unresolved-attribute]
-        assert mock_message_listener not in ble._EmbodyBle__reader._MessageReader__message_listeners  # type: ignore[unresolved-attribute]
+        assert mock_message_listener not in ble._EmbodyBle__message_listeners  # ty: ignore[unresolved-attribute]
+        reader_listeners = ble._EmbodyBle__reader._MessageReader__message_listeners  # ty: ignore[unresolved-attribute]
+        assert mock_message_listener not in reader_listeners
     finally:
         ble.shutdown()
 
@@ -242,10 +247,10 @@ def test_add_remove_response_listeners(mock_response_listener):
     ble = EmbodyBle()
     try:
         ble.add_response_message_listener(mock_response_listener)
-        assert mock_response_listener in ble._EmbodyBle__response_msg_listeners  # type: ignore[unresolved-attribute]
+        assert mock_response_listener in ble._EmbodyBle__response_msg_listeners  # ty: ignore[unresolved-attribute]
 
         ble.discard_response_message_listener(mock_response_listener)
-        assert mock_response_listener not in ble._EmbodyBle__response_msg_listeners  # type: ignore[unresolved-attribute]
+        assert mock_response_listener not in ble._EmbodyBle__response_msg_listeners  # ty: ignore[unresolved-attribute]
     finally:
         ble.shutdown()
 
@@ -258,10 +263,10 @@ def test_add_remove_ble_listeners():
 
     try:
         ble.add_ble_message_listener(ble_listener)
-        assert ble_listener in ble._EmbodyBle__ble_message_listeners  # type: ignore[unresolved-attribute]
+        assert ble_listener in ble._EmbodyBle__ble_message_listeners  # ty: ignore[unresolved-attribute]
 
         ble.discard_ble_message_listener(ble_listener)
-        assert ble_listener not in ble._EmbodyBle__ble_message_listeners  # type: ignore[unresolved-attribute]
+        assert ble_listener not in ble._EmbodyBle__ble_message_listeners  # ty: ignore[unresolved-attribute]
     finally:
         ble.shutdown()
 
@@ -280,7 +285,8 @@ def test_listener_registration_propagates_to_reader(
         ble.add_message_listener(mock_message_listener)
 
         # Should be in reader
-        assert mock_message_listener in ble._EmbodyBle__reader._MessageReader__message_listeners  # type: ignore[unresolved-attribute]
+        reader_listeners = ble._EmbodyBle__reader._MessageReader__message_listeners  # ty: ignore[unresolved-attribute]
+        assert mock_message_listener in reader_listeners
     finally:
         ble.shutdown()
 
@@ -437,7 +443,7 @@ def test_disconnect_exception_handling(mock_scanner_class, mock_client_class, mo
 
         # Should still disconnect despite exception
         mock_client_class.disconnect.assert_called()
-        assert ble._EmbodyBle__client is None  # type: ignore[unresolved-attribute]
+        assert ble._EmbodyBle__client is None  # ty: ignore[unresolved-attribute]
     finally:
         ble.shutdown()
 
@@ -639,8 +645,8 @@ def test_error_listener_independent_set_on_reader(
         ble.connect(device_name="EmBody_1234")
 
         # The reader's error_listeners set should be a separate object from EmbodyBle's
-        ble_set = ble._EmbodyBle__error_listeners  # type: ignore[unresolved-attribute]
-        reader_set = ble._EmbodyBle__reader._MessageReader__error_listeners  # type: ignore[unresolved-attribute]
+        ble_set = ble._EmbodyBle__error_listeners  # ty: ignore[unresolved-attribute]
+        reader_set = ble._EmbodyBle__reader._MessageReader__error_listeners  # ty: ignore[unresolved-attribute]
         assert ble_set is not reader_set
 
         # But they should contain the same listener

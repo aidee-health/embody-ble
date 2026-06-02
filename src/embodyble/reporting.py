@@ -2,8 +2,8 @@
 
 import logging
 import struct
-from datetime import datetime
 from datetime import UTC
+from datetime import datetime
 
 from embodycodec import attributes
 from embodycodec import codec
@@ -12,6 +12,7 @@ from embodycodec import types
 from embodyble.embodyble import EmbodyBle
 from embodyble.listeners import BleMessageListener
 from embodyble.listeners import MessageListener
+
 
 logger = logging.getLogger(__name__)
 
