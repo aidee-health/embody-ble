@@ -33,7 +33,7 @@
 
 ## Requirements
 
-- Python 3.11-3.13
+- Python 3.12-3.13
 - Access to private Aidee Health repositories on Github
 
 ## Installation

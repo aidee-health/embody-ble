@@ -36,7 +36,11 @@ UART_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 UART_RX_CHAR_UUID = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
 UART_TX_CHAR_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
-MAX_SAVED_DATA_SIZE = 40960  # Maximum size for incomplete message buffer
+MAX_SAVED_DATA_SIZE = 40960  # Maximum size for incomplete message buffer (allows backlog of multiple packets)
+# Largest plausible length for a single protocol message. The biggest legitimate message is a
+# file transfer chunk: 4096 bytes payload + header + CRC = 4106 bytes. Used as a resync heuristic
+# to distinguish a genuinely incomplete message from garbage that merely looks like a known type.
+MAX_REASONABLE_MESSAGE_LEN = 4106
 
 
 class EmbodyBle(embodyserial.EmbodySender):
@@ -154,16 +158,17 @@ class EmbodyBle(embodyserial.EmbodySender):
         if self.__reader:
             self.__reader.stop()
         if device_name:
-            self.__device_name = device_name
+            resolved_name = device_name
         else:
-            self.__device_name = self.__find_name_from_serial_port()
-        logger.info(f"Using EmBody device name: {self.__device_name}")
+            resolved_name = self.__find_name_from_serial_port()
+        self.__device_name = resolved_name
+        logger.info(f"Using EmBody device name: {resolved_name}")
         scanner = BleakScanner()
 
         device = await scanner.find_device_by_filter(
             lambda d, ad: (
-                bool(ad.local_name and ad.local_name.lower() == self.__device_name.lower())
-                or bool(d and d.name and d.name.lower() == self.__device_name.lower())
+                bool(ad.local_name and ad.local_name.lower() == resolved_name.lower())
+                or bool(d and d.name and d.name.lower() == resolved_name.lower())
             )
         )
         if not device:
@@ -526,7 +531,7 @@ class _MessageReader:
                 try:
                     (msg_type, claimed_len) = codec.Message.get_meta(bytes(data[pos:]))
                     is_known_type = msg_type in codec._MESSAGE_REGISTRY
-                    is_reasonable_len = claimed_len <= MAX_SAVED_DATA_SIZE
+                    is_reasonable_len = claimed_len <= MAX_REASONABLE_MESSAGE_LEN
 
                     if not is_known_type or not is_reasonable_len:
                         # Unknown type or unreasonable length = garbage, skip 1 byte

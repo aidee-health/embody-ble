@@ -5,7 +5,7 @@ description = "Communicate with the EmBody device over BLE (bluetooth)"
 authors = [{name = "Aidee Health AS", email = "hello@aidee.io"}]
 license = "MIT"
 readme = "README.md"
-requires-python = ">=3.11,<4.0"
+requires-python = ">=3.12,<4.0"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
 ]
@@ -76,7 +76,7 @@ force_single_line = true
 lines_after_imports = 2
 
 [tool.ty.environment]
-python-version = "3.11"
+python-version = "3.12"
 
 [tool.ty.rules]
 # Core reference and assignment errors
@@ -118,7 +118,7 @@ output-format = "full"
 error-on-warning = false
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 120
 
 [tool.ruff.lint]
