@@ -226,15 +226,15 @@ wheels = [
 
 [[package]]
 name = "embody-serial"
-version = "1.0.38"
+version = "1.0.39"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "embody-codec" },
     { name = "pyserial" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2b/b4/331b3f49036beec0d0f2128d2ad5fba6540d7a40ff827f52cbfb59286a86/embody_serial-1.0.38.tar.gz", hash = "sha256:ddc31b1bc021e4a13607cc37497833795df0577e6deb2d8e29d947214bdabc91", size = 16423, upload-time = "2025-12-23T19:56:02.756Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/7d/8fd90c5ab8d63f511fd00d58c19e440ae09f58e48de7902d05a39e00afea/embody_serial-1.0.39.tar.gz", hash = "sha256:a0cec90f9d863f8d4774f50fea7e59781df7d8592c93a319dfa612f754616bc4", size = 16473, upload-time = "2026-06-02T17:53:07.532Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/33/5c/c11e08240ab1b25f0d68b5a28fb17397d85fe3bb06cf856900685996e0ad/embody_serial-1.0.38-py3-none-any.whl", hash = "sha256:d53c49674f5b1e440f5ec7c2c7fd1137e42f0b25d18234bd68e017c44fb792e3", size = 18384, upload-time = "2025-12-23T19:56:01.583Z" },
+    { url = "https://files.pythonhosted.org/packages/26/6c/3c075205ec6cbfeff82de8a51121353f58007b102b9660b4d326333cabc0/embody_serial-1.0.39-py3-none-any.whl", hash = "sha256:fd51de740e36dc6cc7f9b344458a34003f74203cb534448efdd741ffe6837a8e", size = 18454, upload-time = "2026-06-02T17:53:06.618Z" },
 ]
 
 [[package]]
