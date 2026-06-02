@@ -22,12 +22,23 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+      # Ensure uv.lock stays consistent with pyproject.toml. Uses the system uv
+      # (same as dev/CI) to avoid pinning a uv version that could drift.
+      - id: uv-lock-check
+        name: uv lock consistency
+        entry: uv lock --locked
+        language: system
+        files: ^(pyproject\.toml|uv\.lock)$
+        pass_filenames: false
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: "v6.0.0"
     hooks:
+      - id: check-added-large-files
       - id: check-case-conflict
       - id: check-merge-conflict
       - id: check-toml
       - id: check-yaml
+      - id: debug-statements
       - id: end-of-file-fixer
+      - id: mixed-line-ending
       - id: trailing-whitespace
