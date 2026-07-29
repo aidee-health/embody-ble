@@ -145,6 +145,7 @@ ignore = [
     "B905",   # zip() without an explicit strict= parameter
     "PLR2004", # Magic value used in comparison
     "PLR0913", # Too many arguments
+    "PLR0917", # Too many positional arguments (listener callbacks mirror the device protocol)
     "PTH123", # pathlib: skip
     "RUF012", # mutable-class-default
     "PLR0911", # Too many return statements
