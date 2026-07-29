@@ -1,6 +1,6 @@
 [project]
 name = "embody-ble"
-version = "1.1.31"
+version = "1.1.32"
 description = "Communicate with the EmBody device over BLE (bluetooth)"
 authors = [{name = "Aidee Health AS", email = "hello@aidee.io"}]
 license = "MIT"
@@ -12,8 +12,8 @@ classifiers = [
 
 dependencies = [
     "bleak>=0.22.3",
-    "embody-codec>=1.0.32",
-    "embody-serial>=1.0.34",
+    "embody-codec>=1.0.40",
+    "embody-serial>=1.0.39",
 ]
 
 [dependency-groups]

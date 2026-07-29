@@ -157,7 +157,7 @@ wheels = [
 
 [[package]]
 name = "embody-ble"
-version = "1.1.31"
+version = "1.1.32"
 source = { editable = "." }
 dependencies = [
     { name = "bleak" },
@@ -182,8 +182,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "bleak", specifier = ">=0.22.3" },
-    { name = "embody-codec", specifier = ">=1.0.32" },
-    { name = "embody-serial", specifier = ">=1.0.34" },
+    { name = "embody-codec", specifier = ">=1.0.40" },
+    { name = "embody-serial", specifier = ">=1.0.39" },
 ]
 
 [package.metadata.requires-dev]
