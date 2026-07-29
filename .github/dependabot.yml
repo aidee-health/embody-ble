@@ -1,7 +1,12 @@
 version: 2
 updates:
   - package-ecosystem: github-actions
-    directory: "/"
+    # "/" only covers .github/workflows plus a root-level action.yml. Composite
+    # actions living in subdirectories are picked up only when their own
+    # directory is listed, hence the glob below.
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: daily
   - package-ecosystem: "uv"
