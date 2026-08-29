@@ -16,7 +16,7 @@ runs:
 
     - name: Install uv
       # setup-uv stopped publishing floating major tags after v7, so pin the exact release.
-      uses: astral-sh/setup-uv@v9.0.0
+      uses: astral-sh/setup-uv@v10.0.1
       with:
         enable-cache: true
         cache-dependency-glob: "uv.lock" # invalidate cache if uv.lock changes
